@@ -4,6 +4,12 @@
 #include <assert.h>
 #include <stdio.h>
 
+#ifndef __OpenBSD__
+#define strlcat(_dst, _src, _dstsize) \
+	snprintf((&_dst[strlen((_dst))]), \
+	    (_dstsize) - strlen((_dst)), "%s", _src)
+#endif
+
 #if 1			/* 1280x1024 screen */
 #define SPACING     5
 #define VSPACING    5
