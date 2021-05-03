@@ -1,0 +1,45 @@
+SHELL = /bin/sh
+CFLAGS = -g -Wall -pedantic -std=c99 @PKGS_CFLAGS@
+LDFLAGS = @PKGS_LDFLAGS@
+
+prefix = @prefix@
+exec_prefix = $(prefix)
+bindir = $(exec_prefix)/bin
+libdir = $(exec_prefix)/lib
+datarootdir = $(prefix)/share
+mandir = $(datarootdir)/man
+
+INSTALL ?= install
+INSTALLFLAGS ?=
+
+SRCS=cocowm.c layout.c trace.c keyboard.c pane.c action.c \
+	resize.c column.c event.c create.c manage.c draw.c init.c
+DISTFILES=\
+	Makefile\
+	README\
+	MISSING\
+	extern.h\
+	trace.h
+PROG=cocowm
+
+OBJS=$(SRCS:.c=.o)
+
+all: $(PROG)
+
+$(PROG): $(OBJS)
+	$(CC) -o$@ $(OBJS) $(LDFLAGS)
+
+.c.o:
+	$(CC) $(CFLAGS) -c $<
+
+clean:
+	rm -f $(OBJS) $(PROG)
+
+install: $(PROG)
+	if [ ! -x $(DESTDIR)$(bindir) ] ; then \
+		mkdir -p $(DESTDIR)$(bindir) ; fi
+	$(INSTALL) $(INSTALLFLAGS) $(PROG) $(DESTDIR)$(bindir)
+
+uninstall:
+	if [ -e $(DESTDIR)$(bindir)/$(PROG) ] ; then \
+		rm $(DESTDIR)$(bindir)/$(PROG) ; fi

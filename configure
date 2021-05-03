@@ -1,0 +1,49 @@
+#!/bin/sh
+# Usage: ./configure [install prefix]
+
+check_pkg() {
+	PKG=$1
+
+	echo "pkg-config ${PKG}"
+	pkg-config $PKG
+	RET=$?
+	if [ "${RET}" -eq 127 ] ; then
+		echo "You need to have pkg-config."
+		exit 1
+	elif [ "${RET}" -ne 0 ] ; then
+		echo "You need to have '${PKG}' package installed."
+		if [ ! "${PKG_CONFIG_PATH}" == "" ] ; then
+			echo "PKG_CONFIG_PATH=${PKG_CONFIG_PATH}"
+		else
+			echo "Note: PKG_CONFIG_PATH is not set."
+		fi
+		exit 1
+	fi
+}
+
+prefix=/usr/local
+if [ "$#" -eq 1 ] ; then prefix=$1 ; fi
+echo "prefix=${prefix}"
+
+PKGS="x11 xinerama"
+for a in ${PKGS} ; do
+	check_pkg $a
+done
+
+PKGS_CFLAGS=$(pkg-config ${PKGS} --cflags)
+PKGS_LDFLAGS=$(pkg-config ${PKGS} --libs)
+echo "PKGS_CFLAGS=${PKGS_CFLAGS}"
+echo "PKGS_LDFLAGS=${PKGS_LDFLAGS}"
+
+echo "create: Makefile"
+echo '# Automatically generated from Makefile.in by configure' >Makefile
+echo >>Makefile
+sed \
+	-e "s|@prefix@|${prefix}|g" \
+	-e "s|@PKGS_CFLAGS@|${PKGS_CFLAGS}|g" \
+	-e "s|@PKGS_LDFLAGS@|${PKGS_LDFLAGS}|g" \
+	Makefile.in >>Makefile
+SRCS=$(sed -n '/SRCS=/,/[^ ]/p' Makefile.in | sed -e 's/SRCS=//' -e 's/\\//')
+for a in ${SRCS} ; do
+	cc -MM $a ${PKGS_CFLAGS} >>Makefile
+done
