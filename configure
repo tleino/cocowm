@@ -12,7 +12,7 @@ check_pkg() {
 		exit 1
 	elif [ "${RET}" -ne 0 ] ; then
 		echo "You need to have '${PKG}' package installed."
-		if [ ! "${PKG_CONFIG_PATH}" == "" ] ; then
+		if [ "${PKG_CONFIG_PATH}" != "" ] ; then
 			echo "PKG_CONFIG_PATH=${PKG_CONFIG_PATH}"
 		else
 			echo "Note: PKG_CONFIG_PATH is not set."
