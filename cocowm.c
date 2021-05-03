@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <X11/Xresource.h>
+#include <errno.h>
 
 static void capture_existing_windows (struct layout *l);
 static void select_root_events       (Display *);
@@ -21,6 +22,7 @@ main(int argc, char *argv[])
 	struct pane *focus;
 	Display *display;
 	XContext context;
+	char *denv;
 
 	TRACE_BEGIN("start");
 
@@ -30,8 +32,15 @@ main(int argc, char *argv[])
 	}
 	TRACE("using %d columns", columns);
 
-	if ((display = XOpenDisplay(NULL)) == NULL)
-		err(1, "connecting to X11 server");
+        if ((denv = getenv("DISPLAY")) == NULL && errno != 0)
+                err(1, "getenv");
+        if ((display = XOpenDisplay(denv)) == NULL) {
+                if (denv == NULL)
+                        errx(1, "X11 connection failed; "
+                            "DISPLAY environment variable not set?");
+                else
+                        errx(1, "failed X11 connection to '%s'", denv);
+        }
 
 #if 0
 	/*
