@@ -83,6 +83,10 @@ handle_action(Display *display, XContext context, int op, int target,
 			focus_pane((target == Forward) ?
 			           get_next_pane(focus) :
 			           get_prev_pane(focus), layout);
+#ifdef WANT_ONE_PER_COLUMN
+		force_one_maximized(focus->column);
+		resize(focus->column);
+#endif
 		break;
 	case KillPane:
 		if (focus != NULL)

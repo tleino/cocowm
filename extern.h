@@ -278,4 +278,6 @@ struct pane* cycle_focus        (struct column *, int);
 void resize             (struct column *);
 void cycle_placement    (struct column *, struct pane *, int);
 
+void			force_one_maximized(struct column *);
+
 #include "trace.h"

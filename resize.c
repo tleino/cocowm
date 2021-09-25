@@ -14,6 +14,32 @@ wm_resize_error(Display *display, XErrorEvent *event)
 }
 #endif
 
+void
+force_one_maximized(struct column *ws)
+{
+	struct pane *np;
+
+	for (np = ws->first; np != NULL; np = np->next) {
+		if (np == ws->layout->focus) {
+			if (!(np->flags & PF_MAXIMIZED))
+				np->flags |= PF_MAXIMIZED;
+			if (np->flags & PF_MINIMIZED) {
+				np->flags ^= PF_MINIMIZED;
+				transition_pane_state(np, NormalState,
+				    ws->layout->display);
+				XMapWindow(ws->layout->display, np->window);
+			}
+		} else {
+			if (!(np->flags & PF_MINIMIZED)) {
+				np->flags ^= PF_MINIMIZED;
+				transition_pane_state(np, IconicState,
+				    ws->layout->display);
+				XUnmapWindow(ws->layout->display, np->window);
+			}
+		}
+	}
+}
+
 /*
  * Called for all windows in a column after even one window has been
  * modified, such as if a window has been removed. However, since this
