@@ -225,11 +225,16 @@ handle_event(Display *display, XEvent *event, XContext context,
 			}
 			break;
 		}
-		case MapRequest:
-			/* map_window */
-			create_pane(event->xmaprequest.window, layout);
+		case MapRequest: {
+			struct pane *p;
+
+			p = find_pane_by_window(event->xmaprequest.window, layout);
+			if (p == NULL)
+				create_pane(event->xmaprequest.window, layout);
+			else
+				TRACE("double map, ignore");
 			break;
-		case MapNotify:
+		} case MapNotify:
 			TRACE("xmap.window: %lx", event->xmap.window);
 
 			/* add_window */
