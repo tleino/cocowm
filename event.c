@@ -7,7 +7,7 @@
 #include <err.h>
 
 static void observemap         (Display *, XContext, Window, struct layout *);
-static void interceptconfigure (XContext, Window, XConfigureRequestEvent);
+static void interceptconfigure (struct layout *, XContext, Window, XConfigureRequestEvent);
 static void observe_unmap(Display *, XContext, Window, struct layout *);
 
 static void handle_button_release (XEvent *, struct layout *);
@@ -153,7 +153,7 @@ handle_event(Display *display, XEvent *event, XContext context,
 		case ConfigureRequest:
 			TRACE("xconfigurerequest.window: %lx",
 			      event->xconfigurerequest.window);
-			interceptconfigure(context, event->xany.window,
+			interceptconfigure(layout, context, event->xany.window,
 			  event->xconfigurerequest);
 			break;
 		case ConfigureNotify: {
@@ -612,7 +612,7 @@ observedestroy(Display *display, XContext context, Window window, struct layout 
 }
 
 static void
-interceptconfigure(XContext context, Window w,
+interceptconfigure(struct layout *l, XContext context, Window w,
                    XConfigureRequestEvent e)
 {
 	XWindowChanges xwc;
@@ -631,7 +631,7 @@ interceptconfigure(XContext context, Window w,
 	/*
 	 * Forcing all to be same width regardless of what is requested.
 	 */
-	xwc.width = WSWIDTH;
+	xwc.width = l->column->width;
 #endif
 
 	xwc.height = e.height;

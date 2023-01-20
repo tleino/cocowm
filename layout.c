@@ -13,13 +13,59 @@ struct column *
 find_column(struct column *head, int x)
 {
 	struct column *column;
+	int hspacing;
+
+	hspacing = head->layout->font_width_px;
 
 	for (column = head; column != NULL; column = column->next)
-/*		if (column->x >= x && x - column->x < WSWIDTH)*/
-		if (x >= column->x && x - column->x < (WSWIDTH + SPACING))
+		if (x >= column->x && x - column->x < column->width + hspacing)
 			return column;
 
 	return head;
+}
+
+int
+region(Display *display, int x)
+{
+	int i, n;
+	XineramaScreenInfo *xsi;
+
+	/* TODO: Use RandR because we can get events and more info */
+	if (XineramaIsActive(display) != True)
+		return 0;
+
+	xsi = XineramaQueryScreens(display, &n);
+	for (i = 0; i < n; i++) {
+		if (x >= xsi[i].x_org && x < xsi[i].x_org + xsi[i].width)
+			return i;
+	}
+	/* TODO: xsi leaks memory, free it? */
+
+	warnx("region out of bounds x=%d", x);
+
+	return 0;
+}
+
+int
+region_width(Display *display, int x)
+{
+	int i, n;
+	XineramaScreenInfo *xsi;
+
+	/* TODO: Use RandR because we can get events and more info */
+	if (XineramaIsActive(display) != True)
+		return DisplayWidth(display, DefaultScreen(display));
+
+	xsi = XineramaQueryScreens(display, &n);
+	for (i = 0; i < n; i++) {
+		if (x >= xsi[i].x_org && x < xsi[i].x_org + xsi[i].width)
+			return xsi[i].width;
+	}
+	/* TODO: xsi leaks memory, free it? */
+
+	warnx("region out of bounds x=%d", x);
+
+	return DisplayWidth(display, DefaultScreen(display));
 }
 
 int

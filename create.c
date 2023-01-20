@@ -29,6 +29,7 @@ create_pane(Window w, struct layout *l)
 	int                   rheight;
 	XGCValues             v;
 	XSetWindowAttributes  sa;
+	char s[256];
 
 	assert(l != NULL);
 
@@ -58,6 +59,9 @@ create_pane(Window w, struct layout *l)
 		return NULL;
 	}
 
+	/* TODO: Get this from createnotify or something */
+	XFetchName(l->display, w, &p->name);
+
 #ifdef WANT_ZERO_BORDERS
 	if (a.border_width > 0)
 		XSetWindowBorderWidth(l->display, w, 0);
@@ -82,12 +86,12 @@ create_pane(Window w, struct layout *l)
 		transition_pane_state(p, NormalState, l->display);
 
 	rheight = region_height(l->display, a.x);
-	if (a.height > rheight - 20) {
+	if (a.height > rheight - (l->titlebar_height_px)) {
 		TRACE("create: height was over rheight");
-		a.height = rheight - 20;
+		a.height = rheight - (l->titlebar_height_px);
 	}
 
-	p->height = a.height + 20;
+	p->height = a.height + (l->titlebar_height_px);
 
 	TRACE("create: p->height is: %d", p->height);
 
@@ -101,25 +105,39 @@ create_pane(Window w, struct layout *l)
 	sa.event_mask = ButtonPressMask | ButtonReleaseMask | ExposureMask;
 	sa.background_pixel = v.background;
 	p->frame = XCreateWindow(l->display, DefaultRootWindow(l->display),
-	                         a.x, a.y, WSWIDTH, p->height,
+	                         a.x, a.y, l->column->width, p->height,
 	                         0, CopyFromParent, InputOutput,
 	                         CopyFromParent, CWEventMask | CWBackPixel,
 	                         &sa);
+
+	snprintf(s, sizeof(s), "cocowm frame for 0x%lx (%s)", w, p->name);
+	XStoreName(l->display, p->frame, s);
+
 	TRACE("create: create pane frame is %lx", p->frame);
 	XSync(l->display, False);
 	sa.win_gravity = NorthEastGravity;
 	p->close_button = XCreateWindow(l->display, p->frame,
-	                                WSWIDTH - 20, 0, 20, 20,
+	                                l->column->width - l->font_height_px, 0,
+					l->font_height_px, (l->titlebar_height_px),
 	                                0, CopyFromParent, InputOutput,
 	                                CopyFromParent,
 	                                CWEventMask | CWBackPixel | CWWinGravity, &sa);
 	TRACE("create: create pane close is %lx", p->close_button);
+
+	snprintf(s, sizeof(s), "cocowm close_button for 0x%lx (%s)", w, p->name);
+	XStoreName(l->display, p->close_button, s);
+
 	XSync(l->display, False);
 	p->maximize_button = XCreateWindow(l->display, p->frame,
-	                                   WSWIDTH - 40, 0, 20, 20,
+	                                   l->column->width - (l->font_height_px * 2),
+                                           0, l->font_height_px, (l->titlebar_height_px),
 	                                   0, CopyFromParent, InputOutput,
 	                                   CopyFromParent,
 	                                   CWEventMask | CWBackPixel | CWWinGravity, &sa);
+
+	snprintf(s, sizeof(s), "cocowm maximize_button for 0x%lx (%s)", w, p->name);
+	XStoreName(l->display, p->maximize_button, s);
+
 	TRACE("create: create pane maximize is %lx", p->maximize_button);
 	XSync(l->display, False);
 
@@ -132,9 +150,6 @@ create_pane(Window w, struct layout *l)
 	                                   CopyFromParent,
 	                                   CWBackPixel, &sa);
 #endif
-
-	/* TODO: Get this from createnotify or something */
-	XFetchName(l->display, w, &p->name);
 
 	XGetIconName(l->display, w, &p->icon_name);
 
@@ -150,7 +165,7 @@ create_pane(Window w, struct layout *l)
 	XAddToSaveSet(l->display, w);
 
 	/* TODO: Can this work if we are not mapped? */
-	XReparentWindow(l->display, w, p->frame, 0, 20);
+	XReparentWindow(l->display, w, p->frame, 0, (l->titlebar_height_px));
 
 	/* TODO: Or move these to Reparent window event? */
 	if (!(p->flags & PF_MINIMIZED))

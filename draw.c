@@ -10,9 +10,12 @@ static void draw_border(Window, int, int, bool, struct layout *);
 static void
 draw_button(struct pane *p, Window w, char ch, bool reverse, struct layout *l)
 {
-	XDrawString(l->display, w, l->normal_gc, 6, 15, &ch, 1);
+	XDrawString(l->display, w, l->normal_gc,
+	    1 + l->fs->min_bounds.lbearing +
+	        ((l->font_height_px - l->font_width_px) / 2),
+	    1 + l->fs->ascent, &ch, 1);
 
-	draw_border(w, 20, 20, reverse, l);
+	draw_border(w, l->titlebar_height_px, l->titlebar_height_px, reverse, l);
 
 #if 0
 	XDrawRectangle(l->display, w, l->normal_gc, 0, 0, 20, 20);
@@ -45,23 +48,23 @@ draw_outline(struct pane *p, int x, int y, struct layout *l)
 		{ x, y,
 		  x, y + p->adjusted_height },
 	/* 2. right vertical line */
-		{ x + WSWIDTH, y,
-		  x + WSWIDTH, y + p->adjusted_height },
+		{ x + l->column->width, y,
+		  x + l->column->width, y + p->adjusted_height },
 	/* 3. top horizontal line */
 		{ x + 1, y,
-		  x + WSWIDTH - 1, y },
+		  x + l->column->width - 1, y },
 	/* 4. horizontal titlebar separator */
-		{ x + 1, y + 20,
-		  x + WSWIDTH - 1, y + 20 },
+		{ x + 1, y + l->titlebar_height_px,
+		  x + l->column->width - 1, y + l->titlebar_height_px },
 	/* 5. bottom horizontal line */
 		{ x + 1, y + p->adjusted_height,
-		  x + WSWIDTH - 1, y + p->adjusted_height },
+		  x + l->column->width - 1, y + p->adjusted_height },
 	/* 6. topleft -> bottomright diagonal */
 		{ x + 1, y + 21,
-		  x + WSWIDTH - 1, y + p->adjusted_height - 1 },
+		  x + l->column->width - 1, y + p->adjusted_height - 1 },
 	/* 7. bottomleft -> topright diagonal */
 		{ x + 1, y + p->adjusted_height - 1,
-		  x + WSWIDTH - 1, y + 21 }
+		  x + l->column->width - 1, y + l->titlebar_height_px }
 	};
 
 	/*
@@ -114,14 +117,17 @@ draw_frame(struct pane *p, struct layout *l)
 
 	XClearWindow(l->display, p->frame);
 
-	snprintf(number_str, sizeof(number_str), "[%ld]", p->number);
+	snprintf(number_str, sizeof(number_str), "%ld: ", p->number);
 
-	XDrawString(l->display, p->frame, l->normal_gc, 8, 15, number_str,
+	XDrawString(l->display, p->frame, l->normal_gc,
+	    1 + l->fs->min_bounds.lbearing, 1 + l->fs->ascent, number_str,
 	                 strlen(number_str));
 
 	if (p->name != NULL && (p->flags & PF_MINIMIZED) == 0)
 		XDrawString(l->display, p->frame, l->normal_gc,
-		            strlen(number_str) * 8 + 16, 15, p->name,
+		            strlen(number_str) * l->font_width_px +
+		            l->fs->min_bounds.lbearing + 1, 1 + l->fs->ascent,
+			    p->name,
 		            strlen(p->name));
 	else if (p->icon_name != NULL && (p->flags & PF_MINIMIZED))
 		XDrawString(l->display, p->frame, l->normal_gc,
@@ -129,7 +135,7 @@ draw_frame(struct pane *p, struct layout *l)
 		            strlen(p->icon_name));
 
 	if (p->flags & PF_FULLSCREEN)
-		draw_border(p->frame, 1920, 20, false, l);
+		draw_border(p->frame, 1920, l->titlebar_height_px, false, l);
 	else 
-		draw_border(p->frame, WSWIDTH, 20, false, l);
+		draw_border(p->frame, l->column->width, l->titlebar_height_px, false, l);
 }

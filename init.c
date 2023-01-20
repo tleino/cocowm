@@ -55,15 +55,24 @@ void init(Display *display, struct layout *layout, int columns)
 		}
 	}
 
+	layout->fs = XLoadQueryFont(display,
+	                     get_option(display, "font"));
+	xgc.font = layout->fs->fid;
+	xgc.line_width = 1;
+
+	layout->font_width_px =
+	    layout->fs->max_bounds.rbearing -
+	    layout->fs->min_bounds.lbearing;
+	layout->font_height_px =
+	    layout->fs->max_bounds.ascent +
+	    layout->fs->max_bounds.descent;
+	layout->titlebar_height_px = layout->font_height_px + 2;
+
 	layout->head = init_columns(display, columns, layout);
 
 	layout->column = layout->head;
 
 	init_colors(display, layout);
-
-	xgc.font = XLoadFont(display,
-	                     get_option(display, "font"));
-	xgc.line_width = 1;
 
 	XChangeGC(display, layout->focus_gc,
 	          GCFont | GCLineWidth, &xgc);
@@ -90,15 +99,25 @@ static struct column *
 init_columns(Display *display, int n, struct layout *l)
 {
 	struct column *head, *prev, *column;
+	int hspacing, rwidth, equal;
+	int x;
+
+	hspacing = l->font_width_px;
 
 	head = prev = NULL;
+	x = hspacing;
+
+	rwidth = region_width(display, x);
+	rwidth -= hspacing * (n+1);
+	equal = rwidth / n;
+
 	while (n--) {
 		if ((column = calloc(1, sizeof(struct column))) == NULL)
 			err(1, "initializing columns");
 
-		column->x = (n * (WSWIDTH + (SPACING * 2)));
-		if (n == 0)
-			column->x = SPACING;
+		column->x = x;
+		column->width = equal;
+		x += column->width + hspacing;
 
 		column->max_height = region_height(display, column->x);
 		column->layout = l;

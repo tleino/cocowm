@@ -10,32 +10,10 @@
 	    (_dstsize) - strlen((_dst)), "%s", _src)
 #endif
 
-#if 1			/* 1280x1024 screen */
-#define SPACING     5
-#define VSPACING    5
-#else
-#define SPACING     80
-#define VSPACING    10
-#endif
-
-#define NPANES      2
-
-#if 0
-#define WSWIDTH     ((3200 - (NPANES * (SPACING * 2))) / NPANES)
-#elif 0			/* 1920x1200 screen */
-#define WSWIDTH     840
-#else			/* 1280x1024 screen, smaller than 80col xterm
-                           because we wish to have a nice border...
-                         */
-#define WSWIDTH     632
-#endif
-
 #if 1
 #define WANT_ZERO_BORDERS
 #else
 #endif
-
-#define FOCUSHEIGHT 20
 
 struct layout
 {
@@ -66,6 +44,11 @@ struct layout
 	Time           dblclick_time;
 	Display       *display;
 	XContext       context;
+
+	XFontStruct    *fs;
+	int            font_width_px;
+	int            font_height_px;
+	int            titlebar_height_px;
 };
 
 struct pane
@@ -123,6 +106,7 @@ struct column
 	int            n;
 	int            x;
 	int            max_height;
+	int            width;
 
 	struct pane   *first;
 	struct pane   *last;
@@ -227,7 +211,9 @@ void observedestroy (Display *, XContext, Window, struct layout *);
 void           draw_frame         (Display *, Window, const char *, int);
 #endif
 
-int            region_height      (Display *, int x);
+int            region_height      (Display *, int);
+int            region_width       (Display *, int);
+int            region             (Display *, int);
 void           init               (Display *, struct layout *, int);
 struct pane   *layout_manage      (Display *, XContext, Window, int);
 void           layout_draw        (Display *, struct pane *, Bool);
