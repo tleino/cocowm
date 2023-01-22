@@ -199,16 +199,18 @@ handle_event(Display *display, XEvent *event, XContext context,
 		case CreateNotify: {
 			char *s;
 
-			TRACE("xcreatewindow.window=%lx parent=%lx",
+			TRACE("CreateNotify %dx%d+%d+%d bw=%d override=%d",
+			    event->xcreatewindow.width, event->xcreatewindow.height,
+			    event->xcreatewindow.x, event->xcreatewindow.y,
+			    event->xcreatewindow.border_width,
+			    event->xcreatewindow.override_redirect);
+
+			TRACE("CreateNotify xcreatewindow.window=%lx parent=%lx",
 			      event->xcreatewindow.window,
 			      event->xcreatewindow.parent);
 			XFetchName(event->xcreatewindow.display,
 			           event->xcreatewindow.window, &s);
-			TRACE("Created size: %d,%d, bw=%d",
-			      event->xcreatewindow.width,
-			      event->xcreatewindow.height,
-			      event->xcreatewindow.border_width);
-			TRACE("Created name: %s", s);
+			TRACE("CreateNotify Created name: %s", s);
 
 			free(s);
 			break;
@@ -228,6 +230,13 @@ handle_event(Display *display, XEvent *event, XContext context,
 		case MapRequest: {
 			struct pane *p;
 
+			/*
+			 * MapRequest for <window A> creates <pane B>.
+			 * When <pane B> is created we get CreateNotify.
+			 * In MapNotify we Reparent <window A> to <pane B>.
+			 * When <window A> is reparented, we get ReparentNotify.
+			 * In ReparentNotify we resize.
+			 */
 			p = find_pane_by_window(event->xmaprequest.window, layout);
 			if (p == NULL)
 				create_pane(event->xmaprequest.window, layout);
@@ -241,10 +250,17 @@ handle_event(Display *display, XEvent *event, XContext context,
 			observemap(display, context, event->xmap.window,
 			           layout);
 			break;
-		case ReparentNotify:
+		case ReparentNotify: {
+			struct pane *p;
+
 			TRACE("xreparent.window: %lx (parent %lx)",
 			      event->xreparent.window, event->xreparent.parent);
 
+			p = find_pane_by_window(event->xreparent.window, layout);
+			if (p != NULL) {
+				XMapWindow(display, event->xreparent.window);
+				resize(p->column);
+			}
 			/*
 			 * At this point we can safely focus and get events
 			 * because the window is mapped and reparented.
@@ -258,7 +274,7 @@ handle_event(Display *display, XEvent *event, XContext context,
 			             ButtonMotionMask | ExposureMask |
 			             SubstructureNotifyMask);
 			break;
-		default:
+		} default:
 			TRACE_ERR("unhandled event: %s", EVENT_STR(event));
 			break;
 		}
@@ -458,6 +474,11 @@ observemap(Display *display, XContext context, Window window,
 			resize(pane->column);
 		if (pane->flags & PF_FOCUSED)
 			focus_pane(pane, layout);
+	}
+
+	if (window == pane->frame) {
+		TRACE("Reparent from MapNotify");
+		XReparentWindow(display, pane->window, pane->frame, 0, 20);
 	}
 
 	draw_frame(pane, layout);

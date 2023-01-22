@@ -164,7 +164,10 @@ create_pane(Window w, struct layout *l)
 
 	XAddToSaveSet(l->display, w);
 
-	/* TODO: Can this work if we are not mapped? */
+	XMapWindow(l->display, p->frame);
+	XMapSubwindows(l->display, p->frame);
+
+#if 0
 	XReparentWindow(l->display, w, p->frame, 0, (l->titlebar_height_px));
 
 	/* TODO: Or move these to Reparent window event? */
@@ -172,7 +175,7 @@ create_pane(Window w, struct layout *l)
 		XMapWindow(l->display, w);
 
 	XMapSubwindows(l->display, p->frame);
-	XMapWindow(l->display, p->frame);
+#endif
 
 	/*
 	 * Required for click-to-focus.

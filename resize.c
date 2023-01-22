@@ -88,6 +88,8 @@ resize(struct column *ws)
 
 	y = vspacing;
 	for (np = ws->first; np != NULL; np = np->next) {
+		XWindowChanges changes;
+
 		slice = np->adjusted_height;
 
 		if (slice < ws->layout->titlebar_height_px)
@@ -96,7 +98,15 @@ resize(struct column *ws)
 			TRACE_ERR("slice was below font_height_px");
 
 		TRACE("resize frame (np->frame %x) to %d,%d", (unsigned int) np->frame, ws->width, slice);
-		XResizeWindow(ws->layout->display, np->frame, ws->width, slice);
+
+		changes.x = ws->x;
+		changes.y = y;
+		changes.width = ws->width;
+		changes.height = slice;
+		changes.stack_mode = Below;
+
+		XConfigureWindow(ws->layout->display, np->frame,
+		    CWX | CWY | CWWidth | CWHeight | CWStackMode, &changes);
 
 		if (slice < ws->layout->titlebar_height_px)
 			slice = ws->layout->titlebar_height_px;
@@ -122,19 +132,19 @@ resize(struct column *ws)
 			status = XGetWindowAttributes(ws->layout->display,
 			    np->window, &a);
 			XSetErrorHandler(None);
-			if (status == True && a.map_state != IsUnmapped)
-				XResizeWindow(ws->layout->display,
-				    np->window, ws->width, slice - ws->layout->titlebar_height_px);
+			if (status == True && a.map_state != IsUnmapped) {
+				changes.x = 0;
+				changes.y = ws->layout->titlebar_height_px;
+				changes.height -= ws->layout->titlebar_height_px;
+				changes.stack_mode = Above;
+				XConfigureWindow(ws->layout->display, np->window,
+				    CWX | CWY | CWWidth | CWHeight | CWStackMode,
+				    &changes);
+			}
 		}
 
-		TRACE("moving frame to %d,%d", ws->x, y);
-
-		XMoveWindow(ws->layout->display, np->frame, ws->x, y);
-
 		np->y = y;
-
 		y += (slice + vspacing);
-
 	}
 
 	for (np = ws->first; np != NULL; np = np->next) {
