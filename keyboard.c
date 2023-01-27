@@ -23,23 +23,29 @@ struct binding {
  */
 #ifndef STICKYKEYS
 static const struct binding keybinding[] = {
-	{ XK_F3,    0,                       KillPane,       0 },
-	{ XK_F4,    0,                       RestartManager, 0 },
+/* Focus */
 	{ XK_Right, Mod4Mask,                FocusColumn,    Forward },
 	{ XK_Left,  Mod4Mask,                FocusColumn,    Backward },
 	{ XK_Down,  Mod4Mask,                FocusPane,      Forward },
 	{ XK_Up,    Mod4Mask,                FocusPane,      Backward },
+	{ XK_Tab,   Mod4Mask,                PrevFocus,      0 },
+
+/* Moving */
 	{ XK_Right, Mod4Mask | ControlMask,  MoveColumn,     Forward },
 	{ XK_Left,  Mod4Mask | ControlMask,  MoveColumn,     Backward },
 	{ XK_Down,  Mod4Mask | ControlMask,  MovePane,       Forward },
 	{ XK_Up,    Mod4Mask | ControlMask,  MovePane,       Backward },
-	{ XK_F2,    0,                       Maximize,       0 },
+
+/* Actions */
+	{ XK_o,     Mod4Mask,                Maximize,       0 },
+	{ XK_m,     Mod4Mask,                Minimize,       0 },
+	{ XK_f,     Mod4Mask,                Fullscreen,     0 },
+	{ XK_r,     Mod4Mask,                RestartCommand, 0 },
+	{ XK_q,     Mod4Mask,                KillPane,       0 },
+
+/* Window manager */
+	{ XK_F11,   0,                       RestartManager, 0 },
 	{ XK_F12,   0,                       QuitManager,    0 },
-	{ XK_F1,    0,                       Minimize,       0 },
-	{ XK_f,     Mod4Mask | ControlMask,  Fullscreen,     0 },
-	{ XK_Tab,   Mod1Mask,                PrevFocus,      0 },
-	{ XK_Tab,   Mod4Mask,                PrevFocus,      0 },
-	{ XK_F5,    0,                       RestartCommand, 0 },
 	{ 0 }
 };
 #else

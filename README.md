@@ -18,3 +18,33 @@ terminal emulator that by default uses only as little space as
 necessary, and grows as needed, making it possible to have output of
 shell commands in their own short-lived windows rather than accumulating
 an endless scrollback.)
+
+## Default key bindings
+
+### Focusing windows
+
+* **Win+Left** Left.
+* **Win+Right** Right.
+* **Win+Up** Up.
+* **Win+Down** Down.
+* **Win+Tab** Previous.
+
+### Moving the focused window
+
+* **Ctrl+Win+Left** Left.
+* **Ctrl+Win+Right** Right.
+* **Ctrl+Win+Up** Up.
+* **Ctrl+Win+Down** Down.
+
+### Actions for the focused window
+
+* **Win+o** Toggle keep open.
+* **Win+m** Toggle minimize.
+* **Win+f** Toggle fullscreen.
+* **Win+r** Restart command.
+* **Win+q** Close.
+
+### Managing the window manager.
+
+* **F11** Restart.
+* **F12** Quit.
