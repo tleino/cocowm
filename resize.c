@@ -2,10 +2,7 @@
 
 #include <err.h>
 
-static int  sum_below_target (struct column *, int *, int);
-static void adjust_height    (struct column *, int, int);
-
-#if 1
+#if 0
 static int
 wm_resize_error(Display *display, XErrorEvent *event)
 {
@@ -41,171 +38,365 @@ force_one_maximized(struct column *ws)
 }
 
 /*
- * Called for all windows in a column after even one window has been
- * modified, such as if a window has been removed. However, since this
- * processing is started immediately from an event handler for one
- * window, yet may affect multiple windows, we need to be careful not
- * to modify windows that may already have been deleted. That is, we
- * may have DestroyNotify or UnmapNotify in the queue, but not yet
- * processed. Worse, we may not have them yet in the queue, but the
- * server has already destroyed the window. So we need to have one
- * synchronous request per each window.... 
+ * - Adding a pane results in SHRINKING other panes.
+ *   - Unless all other panes are MINIMIZED.
+ *
+ * - Added pane gets newly calculated 'equal' space.
+ *   - Unless it is MINIMIZED, it gets MINIMIZED SIZE.
+ *   - Unless MORE is available, it gets MORE.
+ *
+ * - In the SHRINKING, EQUAL is substracted from panes larger than 'equal'.
+ *   - Panes that are less than 'equal' require no action.
+ *   - EQUAL is the equally divided requirement for more space.
+ *   - No pane is made smaller than 'equal'.
  */
+static int calculate_new_equal(struct column *, struct pane *);
+static int sum_heights(struct column *, struct pane *);
+static void shrink_other_panes(struct column *, struct pane *, int, int);
+
 void
-resize(struct column *ws)
+resize_add(struct column *ws, struct pane *pane)
 {
-	struct pane *np;
-	int slice, y, equal, summed, dheight, n_over;
-	XWindowAttributes a;
-	Status status;
-	int vspacing;
+	int equal;
+	int total;
+	int required;
+	int toolittle;
 
-	assert(ws != NULL);
+	equal = calculate_new_equal(ws, pane);
 
-	if (ws->n == 0)
+	if (pane->flags & PF_MINIMIZED)
+		required = ws->layout->titlebar_height_px;
+	else {
+		if (pane->adjusted_height > 0 &&
+		    pane->adjusted_height < equal)
+			required = pane->adjusted_height;
+		else
+			required = equal;
+	}
+
+	TRACE("required %d equal %d", required, equal);
+
+	shrink_other_panes(ws, pane, required, equal);
+
+	pane->height = required;
+
+	/*
+	 * Nothing to do anymore if we were minimized.
+	 */
+	if (pane->flags & PF_MINIMIZED)
 		return;
 
-#if 0
-	XSync(ws->layout->display, True);
-	XSetErrorHandler(wm_resize_error);
-#endif
+	/*
+	 * Did we have more space after all? Make our pane larger.
+	 */
+	total = sum_heights(ws, pane) + required;
+	toolittle = ws->max_height - total;
 
-	TRACE_BEGIN("resizing column at x=%d with n=%d", ws->x, ws->n);
-
-	vspacing = 0;
-
-	dheight = ws->max_height - (vspacing);
-	dheight -= (ws->n * vspacing);
-	equal = dheight / ws->n;
-
-	summed = sum_below_target(ws, &n_over, equal);
-	dheight -= summed;
-
-	if (n_over && dheight / n_over > equal)	
-		equal = dheight / n_over;
-
-	adjust_height(ws, equal, dheight);
-
-	y = vspacing;
-	for (np = ws->first; np != NULL; np = np->next) {
-		XWindowChanges changes;
-
-		slice = np->adjusted_height;
-
-		if (slice < ws->layout->titlebar_height_px)
-			slice = ws->layout->titlebar_height_px;
-		else
-			TRACE_ERR("slice was below font_height_px");
-
-		TRACE("resize frame (np->frame %x) to %d,%d", (unsigned int) np->frame, ws->width, slice);
-
-		changes.x = ws->x;
-		changes.y = y;
-		changes.width = ws->width;
-		changes.height = slice;
-		changes.stack_mode = Below;
-
-		XConfigureWindow(ws->layout->display, np->frame,
-		    CWX | CWY | CWWidth | CWHeight | CWStackMode, &changes);
-
-		if (slice < ws->layout->titlebar_height_px)
-			slice = ws->layout->titlebar_height_px;
-		else
-			TRACE_ERR("slice was below titlebar_height_px");
-
-		TRACE("resize window %x (frame=%x) to %d,%d",
-		    (unsigned int) np->window,
-		    (unsigned int) np->frame, ws->width, slice - ws->layout->titlebar_height_px);
-
-		if ((np->flags & PF_MAPPED) && !(np->flags & PF_MINIMIZED)) {
-			/*
-			 * This is unfortunate that we have to use
-			 * exception handling for a logic thing, as
-			 * well as having to use a synchronous back and
-			 * forth check for checking if the window we're
-			 * about to play with still lives. This is
-			 * because we're having buffered I/O and we may
-			 * not have received all state at this point when
-			 * we modify windows.
-			 */
-			XSetErrorHandler(wm_resize_error);
-			status = XGetWindowAttributes(ws->layout->display,
-			    np->window, &a);
-			XSetErrorHandler(None);
-			if (status == True && a.map_state != IsUnmapped) {
-				changes.x = 0;
-				changes.y = ws->layout->titlebar_height_px;
-				changes.height -= ws->layout->titlebar_height_px;
-				changes.stack_mode = Above;
-				XConfigureWindow(ws->layout->display, np->window,
-				    CWX | CWY | CWWidth | CWHeight | CWStackMode,
-				    &changes);
-			}
-		}
-
-		np->y = y;
-		y += (slice + vspacing);
-	}
-
-	for (np = ws->first; np != NULL; np = np->next) {
-		if (np->flags & PF_FULLSCREEN) {
-			XMoveWindow(ws->layout->display, np->frame, 0, 0);
-			XResizeWindow(ws->layout->display, np->frame, 1280, 1200);
-			XResizeWindow(ws->layout->display, np->window, 1280, 1200 - ws->layout->titlebar_height_px);
-		}
-	}
-
-#if 0
-	XClearWindow(ws->layout->display, DefaultRootWindow(ws->layout->display));
-	XFillRectangle(ws->layout->display,
-	               DefaultRootWindow(ws->layout->display),
-	               ws->layout->column_gc, ws->x - hspacing, 0, 20 + hspacing, y + vspacing);
-#endif
-
-#if 0
-	XSync(ws->layout->display, False);
-	XSetErrorHandler(None);
-#endif
+	TRACE("toolittle %d", toolittle);
+	if (toolittle > 0)
+		pane->height += toolittle;
 }
 
 static int
-sum_below_target(struct column *ws, int *n_over, int target)
+calculate_new_equal(struct column *ws, struct pane *ignore)
 {
-	struct pane *pane;
-	int height;
+	struct pane *p;
+	int n = 0;
+	int minimized_px = 0;
 
-	height = 0;
-	*n_over = 0;
-	for (pane = ws->first; pane != NULL; pane = pane->next) {
-		if (pane->flags & PF_MINIMIZED) {
-			height += ws->layout->titlebar_height_px; 
-		} else if (!(pane->flags & PF_MAXIMIZED) &&
-		           pane->height <= target) {
-			height += pane->height;
-		} else {
-			(*n_over)++;
-		}
+	if (ignore->flags & PF_MINIMIZED)
+		minimized_px += ws->layout->titlebar_height_px;
+	else
+		n++;
+
+	for (p = ws->first; p != NULL; p = p->next) {
+		if (p == ignore)
+			continue;
+		if (p->flags & PF_MINIMIZED)
+			minimized_px += ws->layout->titlebar_height_px;
+		else
+			n++;
 	}
 
-	return height;
+	TRACE("equal n=%d minimized_px=%d", n, minimized_px);
+	if (n == 0)
+		return (ws->max_height - minimized_px);
+	else
+		return (ws->max_height - minimized_px) / n;
+}
+
+static int
+sum_heights(struct column *ws, struct pane *ignore)
+{
+	struct pane *p;
+	int total = 0;
+
+	for (p = ws->first; p != NULL; p = p->next) {
+		if (p == ignore)
+			continue;
+		total += p->height;
+	}
+
+	return total;
 }
 
 static void
-adjust_height(struct column *ws, int equal, int max_height)
+shrink_other_panes(struct column *ws, struct pane *ignore, int required, int equal)
 {
-	struct pane *pane;
+	struct pane *p;
+	int n = 0;
+	int slice;
+	int tries = 0;
 
-	for (pane = ws->first; pane != NULL; pane = pane->next) {
-		if (pane->flags & PF_MINIMIZED)
-			pane->adjusted_height = ws->layout->titlebar_height_px;
-		else if (pane->flags & PF_MAXIMIZED)
-			pane->adjusted_height = max_height;
-		else
-			pane->adjusted_height = pane->height;
+	if (required <= 0)
+		return;
 
-		if (pane->adjusted_height > equal) {
-			pane->adjusted_height = equal;
-		} else {
+	/*
+	 * Shrink panes that are larger than 'equal', shrink down to 'equal'.
+	 */
+	while (required > 0 && tries-- < 100) {
+		for (p = ws->first; p != NULL; p = p->next) {
+			if (p == ignore)
+				continue;
+			if (p->flags & PF_MINIMIZED)
+				continue;
+			if (p->height > equal)
+				n++;
 		}
+
+		/*
+		 * All existing panes minimized or smaller than 'equal' ?
+		 */
+		if (n == 0)
+			return;	/* Nothing to do. */
+
+		for (p = ws->first; p != NULL; p = p->next) {
+			if (p == ignore)
+				continue;
+			if (p->flags & PF_MINIMIZED)
+				continue;
+
+			slice = required;
+			assert(n > 0);
+			if (n > 0)
+				slice /= n;
+			TRACE("shrink candidate n=%d, slice=%d required=%d", n, slice, required);
+
+			if (p->height > equal) {
+				TRACE("p->height - equal == %d", p->height - equal);
+				TRACE("p->height == %d", p->height);
+				if (p->height - equal >= slice) {
+					required -= slice;
+					p->height -= slice;
+					TRACE("sub slice (slice=%d), required now %d, height now %d", slice, required, p->height);
+				} else {
+					required -= (p->height - equal);
+					p->height = equal;
+					TRACE("equalize, height is now %d required now %d", p->height, required);
+				}
+				if (--n == 0) {
+					TRACE("required left %d", required);
+					break;
+				}
+			}
+		}
+	}
+
+	TRACE("required left final %d", required);
+	assert(required == 0);
+}
+
+/*
+ * - Removing a pane results in ENLARGING other panes.
+ *   - Unless all other panes are MINIMIZED.
+ *
+ * - In the ENLARGING, SURPLUS is added evenly to all non-minimized panes.
+ */
+void
+resize_remove(struct column *ws, struct pane *ignore)
+{
+	struct pane *p;
+	int n = 0;
+	int surplus;
+	int slice;
+
+	surplus = ws->max_height - sum_heights(ws, ignore);
+	TRACE("surplus %d", surplus);
+	assert(surplus > 0);
+	if (surplus <= 0)
+		return;
+
+	for (p = ws->first; p != NULL; p = p->next) {
+		if (p == ignore)
+			continue;
+		if (p->flags & PF_MINIMIZED)
+			continue;
+		n++;
+	}
+
+	TRACE("surplus n %d", n);
+
+	/*
+	 * All are minimized?
+	 */
+	if (n == 0)
+		return;	/* Nothing to do. */
+
+	for (p = ws->first; p != NULL; p = p->next) {
+		if (p == ignore)
+			continue;
+		if (p->flags & PF_MINIMIZED)
+			continue;
+
+		slice = surplus;
+		assert(slice >= 0);
+		if (slice <= 0)
+			break;
+
+		assert(n > 0);
+		if (n > 0)
+			slice /= n;
+
+		TRACE("surplus slice %d", slice);
+
+		p->height += slice;
+		surplus -= slice;
+		if (--n == 0) {
+			assert(surplus == 0);
+			break;
+		}
+	}
+}
+
+/*
+ * What we adjust is the pane above the currently focused pane.
+ * - If it becomes smaller (-adj), we make next panes larger.
+ * - If it becomes larger (+adj), we make next panes smaller.
+ */
+void
+resize_adjust(struct column *ws, struct pane *pane, int adj)
+{
+	struct pane *p;
+	int sum_min = 0;
+	int title;
+	int minsz;
+
+	title = ws->layout->titlebar_height_px;
+	minsz = title * 3;
+
+	if (pane->flags & PF_MINIMIZED) {
+		TRACE("adjust minimized pane by %d, not possible, skip", adj);
+		return;
+	}
+	if (pane->height + adj < (title * 3)) {
+		TRACE("adjust pane by %d, too small, skip", adj);
+		return;
+	}
+
+	/*
+	 * How much space is required at minimum below this pane?
+	 */
+	for (p = pane->next; p != NULL; p = p->next) {
+		if (p->flags & PF_MINIMIZED)
+			sum_min += title;
+		else
+			sum_min += (title * 3);
+	}
+
+	TRACE("sum_min %d", sum_min);
+
+	if (pane->y + pane->height + adj + sum_min > ws->max_height) {
+		TRACE("adjust pane by %d, too large, skip", adj);
+		return;
+	}
+
+	pane->height += adj;
+	pane->adjusted_height = pane->height;
+	TRACE("normal adjust by %d to %d", adj, pane->height);
+
+	if (pane->next == NULL) {
+		if (pane->y + pane->height < ws->max_height)
+			pane->height += ws->max_height - (pane->y + pane->height);
+		pane->adjusted_height = pane->height;
+		return;
+	}
+
+	for (p = pane->next; p != NULL; p = p->next) {
+		if (p->flags & PF_MINIMIZED)
+			continue;
+
+		if (p->height - adj < minsz) {
+			adj -= (p->height - minsz);
+			p->height = minsz;
+		} else {
+			p->height -= adj;
+			adj = 0;
+		}
+
+		p->adjusted_height = p->height;
+		if (adj == 0)
+			break;
+	}
+}
+
+void
+resize_relayout(struct column *ws)
+{
+	struct pane *p;
+	int y = 0;
+
+	TRACE("resize relayout");
+
+	for (p = ws->first; p != NULL; p = p->next) {
+		XWindowChanges changes;
+
+		p->y = y;
+
+		changes.x = ws->x;
+		changes.y = p->y;
+		changes.width = ws->width;
+		changes.height = p->height;
+		changes.stack_mode = Below;
+
+		if (p->flags & PF_FULLSCREEN && p->flags & PF_FOCUS && !(p->flags & PF_MINIMIZED)) {
+			changes.x = 0;
+			changes.y = 0;
+			changes.width = region_width(ws->layout->display, ws->x);
+			changes.height = ws->max_height;
+		}
+
+		TRACE("configuring window x=%d y=%d w=%d h=%d", changes.x,
+		    changes.y, changes.width, changes.height);
+		XConfigureWindow(ws->layout->display, p->frame,
+		    CWX | CWY | CWWidth | CWHeight | CWStackMode, &changes);
+
+		TRACE("relayout y=%d height=%d", p->y, p->height);
+
+		changes.x = 0;
+		changes.y = ws->layout->titlebar_height_px;
+		changes.height = changes.height - ws->layout->titlebar_height_px;
+		changes.stack_mode = Above;
+
+		y += p->height;
+
+		if (p->flags & PF_MINIMIZED || changes.height == 0)
+			continue;
+
+		TRACE("configuring subwindow x=%d y=%d w=%d h=%d", changes.x,
+		    changes.y, changes.width, changes.height);
+
+		XConfigureWindow(ws->layout->display, p->window,
+		    CWX | CWY | CWWidth | CWHeight | CWStackMode, &changes);
+	}
+
+	for (p = ws->first; p != NULL; p = p->next) {
+		if (!(p->flags & PF_FULLSCREEN))
+			continue;
+		if (p->flags & PF_MINIMIZED)
+			continue;
+		if (!(p->flags & PF_FOCUS))
+			continue;
+
+		XRaiseWindow(ws->layout->display, p->frame);
 	}
 }

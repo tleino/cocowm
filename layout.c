@@ -232,7 +232,7 @@ layout_manage(Display *display, XContext context, Window window, int x)
 #else
 	XSetWindowBorderWidth(display, m->window, 10);
 #endif
-	XReparentWindow(display, m->window, m->frame, 0, 20);
+	XReparentWindow(display, m->window, m->frame, 0, m->layout->titlebar_height_px);
 
 
 	return m;

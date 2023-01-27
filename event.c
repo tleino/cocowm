@@ -7,7 +7,7 @@
 #include <err.h>
 
 static void observemap         (Display *, XContext, Window, struct layout *);
-static void interceptconfigure (struct layout *, XContext, Window, XConfigureRequestEvent);
+static void interceptconfigure (struct pane *, struct layout *, XContext, Window, XConfigureRequestEvent);
 static void observe_unmap(Display *, XContext, Window, struct layout *);
 
 static void handle_button_release (XEvent *, struct layout *);
@@ -59,6 +59,10 @@ handle_event(Display *display, XEvent *event, XContext context,
 #endif
 
 			XGrabServer(display);
+
+			layout->outline_y = p->y;
+			layout->outline_x = p->column->x;
+
 			handle_button_press(display, context, event, layout);
 			} else {
 		if (!(p->flags & PF_FOCUSED)) {
@@ -150,13 +154,19 @@ handle_event(Display *display, XEvent *event, XContext context,
 			TRACE("xmap.window: %lx", event->xmap.window);
 			observe_unmap(display, context, event->xmap.window, layout);
 			break;
-		case ConfigureRequest:
+		case ConfigureRequest: {
+			struct pane *p;
+
+			p = find_pane_by_window(event->xconfigurerequest.window,
+			    layout);
+
 			TRACE("xconfigurerequest.window: %lx",
 			      event->xconfigurerequest.window);
-			interceptconfigure(layout, context, event->xany.window,
-			  event->xconfigurerequest);
+			interceptconfigure(p, layout, context,
+			    event->xconfigurerequest.window,
+			    event->xconfigurerequest);
 			break;
-		case ConfigureNotify: {
+		} case ConfigureNotify: {
 			TRACE("- configurenotify - xconfigure.window: %lx",
 			      event->xconfigure.window);
 #if 0
@@ -185,11 +195,17 @@ handle_event(Display *display, XEvent *event, XContext context,
 			p = find_pane_by_window(event->xbutton.window, layout);
 			if (p != NULL && !(p->flags & PF_MINIMIZED)) {
 				TRACE("from pane %s", PANE_STR(p));
+#if 0
 				p->height = event->xresizerequest.height + 20;
+#else
+#if 0
+				resize_adjust(p->column, p, event->xresizerequest.height + layout->titlebar_height_px - p->height);
+#endif
+#endif
 				TRACE("...height is set to: %d", p->height);
 			}
 			if (p->column != NULL)
-				resize(p->column);
+				resize_relayout(p->column);
 
 #if 0
 			XSync(layout->display, False);
@@ -244,7 +260,7 @@ handle_event(Display *display, XEvent *event, XContext context,
 				TRACE("double map, ignore");
 			break;
 		} case MapNotify:
-			TRACE("xmap.window: %lx", event->xmap.window);
+			TRACE("MapNotify xmap.window: %lx", event->xmap.window);
 
 			/* add_window */
 			observemap(display, context, event->xmap.window,
@@ -253,13 +269,14 @@ handle_event(Display *display, XEvent *event, XContext context,
 		case ReparentNotify: {
 			struct pane *p;
 
-			TRACE("xreparent.window: %lx (parent %lx)",
+			TRACE("ReparentNotify xreparent.window: %lx (parent %lx)",
 			      event->xreparent.window, event->xreparent.parent);
 
 			p = find_pane_by_window(event->xreparent.window, layout);
 			if (p != NULL) {
+				p->flags |= PF_REPARENTED;
 				XMapWindow(display, event->xreparent.window);
-				resize(p->column);
+				resize_relayout(p->column);
 			}
 			/*
 			 * At this point we can safely focus and get events
@@ -310,6 +327,8 @@ handle_button_release(XEvent *event, struct layout *layout)
 		layout->active->flags ^= PF_MINIMIZED;
 		layout->dblclick_time = 0;
 		minimize(layout->active, layout);
+
+		return;
 	} else {
 		TRACE("not minimize time is: %ld", event->xbutton.time);
 		layout->dblclick_time = event->xbutton.time;
@@ -337,7 +356,7 @@ handle_button_press(Display *display, XContext context, XEvent *event,
 			TRACE("button was maximize button");
 			pane->flags ^= PF_MAXIMIZED;
 			draw(event->xbutton.window, layout);
-			resize(pane->column);
+			resize_relayout(pane->column);
 			return;
 		} else if (event->xbutton.window == pane->close_button) {
 			TRACE("close button pressed");
@@ -407,6 +426,7 @@ snap_pane(XEvent *event, struct layout *layout)
 {
 	struct column *column;
 	struct pane *pane;
+	int dpx;
 
 	if ((pane = layout->active) == NULL)
 		return;
@@ -422,9 +442,17 @@ snap_pane(XEvent *event, struct layout *layout)
 	if (column != layout->active->column) {
 		TRACE("snap pane column changed?");
 		remove_pane(layout->active, 1);
-/*		resize(layout->active->column);*/
 		manage_pane(layout->active, column, NULL);
 		focus_pane(layout->active, layout);
+	} else if (layout->outline_y != pane->y) {
+		dpx = layout->outline_y - pane->y;
+
+		if (pane->prev != NULL) {
+			resize_adjust(pane->column, pane->prev, dpx);
+			resize_relayout(pane->column);
+		}
+		TRACE("Pane moved vertically outline_y=%d pane_y=%d dpx=%d y_adj=%d",
+		    layout->outline_y, pane->y, dpx, pane->y_adj);
 	}
 
 	layout->active = NULL;
@@ -466,14 +494,21 @@ observemap(Display *display, XContext context, Window window,
 
 		pane->flags &= ~PF_CAPTURE_EXISTING;
 
-		TRACE("focus pane from observemap");
-		focus_pane(pane, layout);
+		if (pane->flags & PF_REPARENTED) {
+			TRACE("focus pane from observemap (reparent ok)");
+			focus_pane(pane, layout);
+		}
 	} else {
 		TRACE("Got back old window from withdrawn/iconified?");
-		if (pane->column != NULL)
-			resize(pane->column);
-		if (pane->flags & PF_FOCUSED)
-			focus_pane(pane, layout);
+		if (pane->column != NULL) {
+			resize_relayout(pane->column);
+		}
+		if (pane->flags & PF_FOCUSED) {
+			if (pane->flags & PF_REPARENTED) {
+				TRACE("focus pane from observemap 2 (reparent ok)");
+				focus_pane(pane, layout);
+			}
+		}
 	}
 
 	if (window == pane->frame) {
@@ -633,16 +668,22 @@ observedestroy(Display *display, XContext context, Window window, struct layout 
 }
 
 static void
-interceptconfigure(struct layout *l, XContext context, Window w,
+interceptconfigure(struct pane *p, struct layout *l, XContext context, Window w,
                    XConfigureRequestEvent e)
 {
 	XWindowChanges xwc;
 	unsigned long xwcm;
 
+	if (p != NULL) {
+		TRACE("intercepted configure for managed pane, ignore");
+		return;
+	}
+
 	TRACE("intercepted %d,%d to %d,%d", e.x, e.y, e.width, e.height);
 
 	xwcm = e.value_mask &
 	    (CWX | CWY | CWWidth | CWHeight | CWBorderWidth);
+
 	xwc.x = e.x;
 	xwc.y = e.y;
 

@@ -76,8 +76,12 @@ struct pane
 #define PF_HAS_TAKEFOCUS (1 << 12)
 #define PF_CAPTURE_EXISTING (1 << 13)
 #define PF_WANT_RESTART (1 << 14)
+#define PF_REPARENTED (1 << 15)
 
 	int            flags;
+
+	/* User-adjusted sizing, can be positive or negative. */
+	int            y_adj;
 
 	/* Cache of server data */
 	int            y;
@@ -261,7 +265,11 @@ void focus_column(struct column *c, struct layout *l);
 
 struct pane* cycle_focus        (struct column *, int);
 
-void resize             (struct column *);
+void                    resize_add(struct column *, struct pane *);
+void                    resize_remove(struct column *, struct pane *);
+void                    resize_adjust(struct column *, struct pane *, int);
+void                    resize_relayout(struct column *);
+
 void cycle_placement    (struct column *, struct pane *, int);
 
 void			force_one_maximized(struct column *);

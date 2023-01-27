@@ -15,6 +15,9 @@ manage_pane(struct pane *p, struct column *c, struct pane *a)
 	TRACE("manage_pane: adding %s after %s in column x=%d",
 	      PANE_STR(p), PANE_STR(a), c->x);
 
+	resize_add(c, p);
+	p->column = c;
+
 	if (a == NULL) {	/* Add to top */
 		p->next = c->first;
 		if (c->first)
@@ -37,15 +40,14 @@ manage_pane(struct pane *p, struct column *c, struct pane *a)
 	p->column = c;
 	c->n++;
 
-	/* TODO: Move these out from here */
-	resize(c);
-
 	assert(c->last != NULL);
 	assert(c->first != NULL);
 	assert(p->column == c);
 	assert(c->n > 0);
 	assert(p != c->last || p->next == NULL);
 	assert(p != c->first || p->prev == NULL);
+
+	resize_relayout(c);
 
 	TRACE_END("add to column done for pane %ld (after %ld)",
 	          PANE_NUMBER(p), PANE_NUMBER(a));
@@ -61,6 +63,8 @@ manage_pane(struct pane *p, struct column *c, struct pane *a)
 void
 remove_pane(struct pane *p, int want_resize)
 {
+	struct column *c;
+
 	assert(p != NULL);
 	assert(p->column != NULL);
 
@@ -89,18 +93,6 @@ remove_pane(struct pane *p, int want_resize)
 
 	p->next = p->prev = NULL;
 
-	/*
-	 * We need to call resize from outside of this function,
-	 * because we might be in middle destroying windows,
-	 * which might no longer have a workable Window pointer.
-	 */
-	if (want_resize == 1) {
-		TRACE("remove_pane: want_resize");
-		resize(p->column);
-	} else {
-		TRACE("remove_pane: did not want resize");
-	}
-
 	assert(p->column->n == 0 || p->column->first != NULL);
 	assert(p->column->n == 0 || p->column->last != NULL);
 
@@ -117,5 +109,19 @@ remove_pane(struct pane *p, int want_resize)
 	          PANE_NUMBER(p));
 	dump_column(p->column);
 
+	c = p->column;
 	p->column = NULL;
+
+	/*
+	 * We need to call resize from outside of this function,
+	 * because we might be in middle destroying windows,
+	 * which might no longer have a workable Window pointer.
+	 */
+	resize_remove(c, p);
+	if (want_resize == 1) {
+		TRACE("remove_pane: want_resize");
+		resize_relayout(c);
+	} else {
+		TRACE("remove_pane: did not want resize");
+	}
 }

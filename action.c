@@ -95,15 +95,14 @@ handle_action(Display *display, XContext context, int op, int target,
 	case Fullscreen:
 		if (focus != NULL) {
 			focus->flags ^= PF_FULLSCREEN;
-			XRaiseWindow(display, focus->frame);
-			resize(layout->focus->column);
+			resize_relayout(layout->focus->column);
 		}
 		break;
 	case Maximize:
 		if (focus != NULL) {
 			focus->flags ^= PF_MAXIMIZED;
 			draw_maximize_button(layout->focus, layout);
-			resize(layout->focus->column);
+			resize_relayout(layout->focus->column);
 		}
 		break;
 	case Minimize:
@@ -111,7 +110,7 @@ handle_action(Display *display, XContext context, int op, int target,
 			focus->flags ^= PF_MINIMIZED;
 			minimize(focus, layout);
 			draw_frame(layout->focus, layout);
-			resize(layout->focus->column);
+			resize_relayout(layout->focus->column);
 		}
 		break;
 	case PrevFocus:
@@ -167,12 +166,12 @@ minimize(struct pane *p, struct layout *l)
 		XMapWindow(l->display, p->window);
 	}
 
-#if 1
 	if (p->column != NULL) {
 		draw_frame(p, l);
-		resize(p->column);
+		resize_remove(p->column, p);
+		resize_add(p->column, p);
+		resize_relayout(p->column);
 	}
-#endif
 }
 
 /*

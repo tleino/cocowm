@@ -46,10 +46,10 @@ draw_outline(struct pane *p, int x, int y, struct layout *l)
 	XSegment s[7] = {
 	/* 1. left vertical line */
 		{ x, y,
-		  x, y + p->adjusted_height },
+		  x, y + p->height },
 	/* 2. right vertical line */
 		{ x + l->column->width, y,
-		  x + l->column->width, y + p->adjusted_height },
+		  x + l->column->width, y + p->height },
 	/* 3. top horizontal line */
 		{ x + 1, y,
 		  x + l->column->width - 1, y },
@@ -57,13 +57,13 @@ draw_outline(struct pane *p, int x, int y, struct layout *l)
 		{ x + 1, y + l->titlebar_height_px,
 		  x + l->column->width - 1, y + l->titlebar_height_px },
 	/* 5. bottom horizontal line */
-		{ x + 1, y + p->adjusted_height,
-		  x + l->column->width - 1, y + p->adjusted_height },
+		{ x + 1, y + p->height,
+		  x + l->column->width - 1, y + p->height },
 	/* 6. topleft -> bottomright diagonal */
 		{ x + 1, y + 21,
-		  x + l->column->width - 1, y + p->adjusted_height - 1 },
+		  x + l->column->width - 1, y + p->height - 1 },
 	/* 7. bottomleft -> topright diagonal */
-		{ x + 1, y + p->adjusted_height - 1,
+		{ x + 1, y + p->height - 1,
 		  x + l->column->width - 1, y + l->titlebar_height_px }
 	};
 
@@ -135,7 +135,7 @@ draw_frame(struct pane *p, struct layout *l)
 		            strlen(p->icon_name));
 
 	if (p->flags & PF_FULLSCREEN)
-		draw_border(p->frame, 1920, l->titlebar_height_px, false, l);
+		draw_border(p->frame, region_width(l->display, l->column->x), l->titlebar_height_px, false, l);
 	else 
 		draw_border(p->frame, l->column->width, l->titlebar_height_px, false, l);
 }

@@ -131,9 +131,9 @@ dump_column(struct column *column)
 
 	for (pane = column->first; pane != NULL; pane = pane->next) {
 		TRACE("...%s:", PANE_STR(pane));
-		TRACE("......frame=%lx window=%lx prev=%ld next=%ld ",
+		TRACE("......frame=%lx window=%lx prev=%ld next=%ld height=%d ",
 		      pane->frame, pane->window,
-		      PANE_NUMBER(pane->prev), PANE_NUMBER(pane->next));
+		      PANE_NUMBER(pane->prev), PANE_NUMBER(pane->next), pane->height);
 		TRACE("......flags=%s", dump_flags(pane->flags));
 	}
 }
