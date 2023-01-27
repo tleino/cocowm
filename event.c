@@ -213,22 +213,12 @@ handle_event(Display *display, XEvent *event, XContext context,
 			break;
 		}
 		case CreateNotify: {
-			char *s;
-
 			TRACE("CreateNotify %dx%d+%d+%d bw=%d override=%d",
 			    event->xcreatewindow.width, event->xcreatewindow.height,
 			    event->xcreatewindow.x, event->xcreatewindow.y,
 			    event->xcreatewindow.border_width,
 			    event->xcreatewindow.override_redirect);
 
-			TRACE("CreateNotify xcreatewindow.window=%lx parent=%lx",
-			      event->xcreatewindow.window,
-			      event->xcreatewindow.parent);
-			XFetchName(event->xcreatewindow.display,
-			           event->xcreatewindow.window, &s);
-			TRACE("CreateNotify Created name: %s", s);
-
-			free(s);
 			break;
 		}
 		case PropertyNotify: {
