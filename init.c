@@ -117,18 +117,22 @@ init_columns(Display *display, int n, struct layout *l)
 
 		column->x = x;
 		column->width = equal;
-		x += column->width + hspacing;
-
 		column->max_height = region_height(display, column->x);
 		column->layout = l;
-		column->next = head;
 
-		if (column->next == NULL)
-			l->tail = column;
+		/*
+		 * Add to tail.
+		 */
+		if (head == NULL)
+			head = column;
+		else {
+			column->prev = l->tail;
+			assert(column->prev != NULL);
+			column->prev->next = column;
+		}
+		l->tail = column;
 
-		head = column;
-		if (head->next != NULL)
-			head->next->prev = head;
+		x += column->width + hspacing;
 	}
 
 	return head;
