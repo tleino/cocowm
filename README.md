@@ -13,13 +13,9 @@ moves a window one column to the left and resizes if space allows for
 it, rather than by manually micro-managing precise placement and size
 using a mouse.
 
-(This window manager is also meant to be used together with a specialized
-terminal emulator that by default uses only as little space as
-necessary, and grows as needed, making it possible to have output of
-shell commands in their own short-lived windows rather than accumulating
-an endless scrollback.)
-
 ## Default key bindings
+
+Edit keyboard.c to modify.
 
 ### Focusing windows
 
@@ -48,3 +44,33 @@ an endless scrollback.)
 
 * **F11** Restart.
 * **F12** Quit.
+
+## Dependencies
+
+* No dependencies if you're compiling for a normal/sane Unix-like system that
+has X11 Window System.
+
+## Compiling
+
+	$ ./configure ~
+	$ make
+	$ make install
+
+## Customizing
+
+* Edit Makefile.in and e.g. remove or add compile-time options using -D in
+the CFLAGS. E.g. see 'WANT_ONE_PER_COLUMN' option.
+* Edit files such as keyboard.c
+
+## Running
+
+Running with 3 columns:
+
+	$ cocowm 3
+
+## See also
+
+* [mxswm](https://github.com/tleino/mxswm) another window manager by the same
+author.
+* [cocovt](https://github.com/tleino/cocovt) terminal emulator by the same
+author that is friends with *cocowm*.
