@@ -1,5 +1,5 @@
 SHELL = /bin/sh
-CFLAGS = -g -Wall -pedantic -std=c99 -DWANT_ONE_PER_COLUMN @PKGS_CFLAGS@
+CFLAGS = -g -Wall -pedantic -std=c99 @PKGS_CFLAGS@
 LDFLAGS = @PKGS_LDFLAGS@
 
 prefix = @prefix@

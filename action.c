@@ -115,8 +115,13 @@ handle_action(Display *display, XContext context, int op, int target,
 		break;
 	case Minimize:
 		if (focus != NULL) {
-			focus->flags ^= PF_MINIMIZED;
-			minimize(focus, layout);
+			if (target == Others) {
+				minimize_others(focus, layout);
+			} else {
+				focus->flags ^= PF_MINIMIZED;
+				focus->flags &= ~PF_HIDDEN;
+				minimize(focus, layout);
+			}
 			draw_frame(layout->focus, layout);
 			resize_relayout(layout->focus->column);
 		}
@@ -180,12 +185,54 @@ move_pane(struct pane *p, int direction)
 }
 
 void
+minimize_others(struct pane *focus, struct layout *l)
+{
+	struct pane *p;
+	struct column *ws;
+	int was_leader;
+
+	if (focus == NULL)
+		return;
+
+	ws = focus->column;
+	if (ws == NULL)
+		return;
+
+	if (focus->flags & PF_MINIMIZED) {
+		focus->flags &= ~(PF_MINIMIZED | PF_HIDDEN);
+		minimize(focus, l);
+	}
+	was_leader = focus->flags & PF_HIDE_OTHERS_LEADER;
+	if (was_leader == 0)
+		focus->flags |= PF_HIDE_OTHERS_LEADER;
+	else
+		focus->flags &= ~PF_HIDE_OTHERS_LEADER;
+
+	for (p = ws->first; p != NULL; p = p->next) {
+		if (p == focus)
+			continue;
+		if (p->flags & PF_KEEP_OPEN)
+			continue;
+		p->flags &= ~PF_HIDE_OTHERS_LEADER;
+		if (was_leader && p->flags & PF_HIDDEN)
+			p->flags &= ~(PF_MINIMIZED | PF_HIDDEN);
+		else if (!was_leader && !(p->flags & PF_MINIMIZED))
+			p->flags |= (PF_MINIMIZED | PF_HIDDEN);
+		minimize(p, l);
+	}
+}
+
+void
 minimize(struct pane *p, struct layout *l)
 {
 	assert(p != NULL && l != NULL);
 
 	if (p->flags & PF_MINIMIZED) {
 		transition_pane_state(p, IconicState, l->display);
+		if (p->flags & PF_KEEP_OPEN) {
+			p->flags &= ~PF_KEEP_OPEN;
+			draw_maximize_button(p, l);
+		}
 		XUnmapWindow(l->display, p->window);
 	} else {
 		transition_pane_state(p, NormalState, l->display);

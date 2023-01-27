@@ -487,6 +487,7 @@ observemap(Display *display, XContext context, Window window,
 		if (pane->flags & PF_REPARENTED) {
 			TRACE("focus pane from observemap (reparent ok)");
 			focus_pane(pane, layout);
+			pane->flags &= ~PF_REPARENTED;
 		}
 	} else {
 		TRACE("Got back old window from withdrawn/iconified?");
@@ -497,6 +498,7 @@ observemap(Display *display, XContext context, Window window,
 			if (pane->flags & PF_REPARENTED) {
 				TRACE("focus pane from observemap 2 (reparent ok)");
 				focus_pane(pane, layout);
+				pane->flags &= ~PF_REPARENTED;
 			}
 		}
 	}

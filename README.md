@@ -36,9 +36,15 @@ Edit keyboard.c to modify.
 
 * **Win+o** Toggle keep open.
 * **Win+m** Toggle minimize.
+* **Win+h** Toggle hide others.
 * **Win+f** Toggle fullscreen.
 * **Win+r** Restart command.
 * **Win+q** Close.
+
+_Minimize_ means window is explicitly hidden and needs to be reopened manually.
+
+_Hide_ means window is temporarily hidden and is shown automatically
+when hiding is toggled off.
 
 ### Managing the window manager.
 

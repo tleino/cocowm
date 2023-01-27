@@ -77,6 +77,8 @@ struct pane
 #define PF_CAPTURE_EXISTING (1 << 13)
 #define PF_WANT_RESTART (1 << 14)
 #define PF_REPARENTED (1 << 15)
+#define PF_HIDDEN (1 << 16)
+#define PF_HIDE_OTHERS_LEADER (1 << 17)
 
 	int            flags;
 
@@ -157,8 +159,8 @@ void read_pane_protocols(struct pane *p, Display *d);
 
 void send_take_focus(struct pane *p, Display *d);
 
-void
-minimize(struct pane *p, struct layout *l);
+void minimize(struct pane *, struct layout *);
+void minimize_others(struct pane *, struct layout *);
 
 enum action {
 	NoAction=0,
@@ -181,7 +183,8 @@ enum action {
 enum target {
 	NoTarget=0,
 	Backward,
-	Forward
+	Forward,
+	Others
 };
 
 /* submit.c */
