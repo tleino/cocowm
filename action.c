@@ -12,7 +12,7 @@
  * And current column gives the current window if we have one.
  */
 
-static void move_pane(struct pane *, struct pane *);
+static void move_pane(struct pane *, int);
 void send_delete_window(struct pane *, Display *);
 void send_take_focus(struct pane *p, Display *d);
 void send_message(Atom a, Window w, Display *d);
@@ -74,9 +74,7 @@ handle_action(Display *display, XContext context, int op, int target,
 		break;
 	case MovePane:
 		if (focus != NULL && focus->column->n > 1)
-			move_pane(focus, (target == Forward) ?
-			          get_next_pane(focus) :
-			          get_prev_pane(focus));
+			move_pane(focus, target);
 		break;
 	case FocusPane:
 		if (focus != NULL)
@@ -141,16 +139,34 @@ close_pane(struct pane *p, struct layout *l)
 }
 
 /*
- * Move pane (p) to be after another pane (a) in a layout.
+ * Move pane 'p' in a column to 'direction'.
  */
 static void
-move_pane(struct pane *p, struct pane *a)
+move_pane(struct pane *p, int direction)
 {
-	assert(p != NULL && a != NULL);
+	struct pane *after, *target;
+	struct column *c;
 
-	remove_pane(p, 1);
-/*	resize(p->column);*/
-	manage_pane(p, a->column, get_prev_pane(a));
+	assert(p != NULL);
+
+	if (direction == Forward) {
+		target = p;
+		after = p->next;
+		/* If after is NULL, the move goes to the top */
+	} else {
+		target = p->prev;
+		after = p;
+		if (target == NULL) {
+			target = p;
+			after = p->column->last;
+		}
+	}
+
+	assert(target != NULL);
+	c = target->column;
+
+	remove_pane(target, 0);
+	manage_pane(target, c, after);
 }
 
 void
