@@ -2,14 +2,15 @@
 
 #include <err.h>
 
-#if 0
+static int has_resize_err;
+
 static int
 wm_resize_error(Display *display, XErrorEvent *event)
 {
-	warnx("error in resizing");
+	TRACE("error in resizing, should automatically retry");
+	has_resize_err = 1;
 	return 1;
 }
-#endif
 
 void
 force_one_maximized(struct column *ws)
@@ -347,6 +348,14 @@ resize_relayout(struct column *ws)
 
 	TRACE("resize relayout");
 
+	/*
+	 * If we get error here it means we're in middle of destroying
+	 * multiple windows, or similar situation, which means we'll get
+	 * back to here very soon and have a run without errors.
+	 */
+	has_resize_err = 0;
+	XSetErrorHandler(wm_resize_error);
+
 	for (p = ws->first; p != NULL; p = p->next) {
 		XWindowChanges changes;
 
@@ -367,6 +376,7 @@ resize_relayout(struct column *ws)
 
 		TRACE("configuring window x=%d y=%d w=%d h=%d", changes.x,
 		    changes.y, changes.width, changes.height);
+
 		XConfigureWindow(ws->layout->display, p->frame,
 		    CWX | CWY | CWWidth | CWHeight | CWStackMode, &changes);
 
@@ -399,4 +409,7 @@ resize_relayout(struct column *ws)
 
 		XRaiseWindow(ws->layout->display, p->frame);
 	}
+
+	XSync(ws->layout->display, False);
+	XSetErrorHandler(None);
 }
