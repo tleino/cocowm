@@ -18,24 +18,24 @@ force_one_maximized(struct column *ws)
 	struct pane *np;
 
 	for (np = ws->first; np != NULL; np = np->next) {
-		if (np == ws->layout->focus) {
-			if (!(np->flags & PF_MAXIMIZED))
-				np->flags |= PF_MAXIMIZED;
+		if (np == ws->layout->focus || np->flags & PF_KEEP_OPEN) {
 			if (np->flags & PF_MINIMIZED) {
-				np->flags ^= PF_MINIMIZED;
-				transition_pane_state(np, NormalState,
-				    ws->layout->display);
-				XMapWindow(ws->layout->display, np->window);
+				np->flags &= ~PF_MINIMIZED;
+				minimize(np, ws->layout);
+				draw_frame(np, ws->layout);
 			}
-		} else {
-			if (!(np->flags & PF_MINIMIZED)) {
-				np->flags ^= PF_MINIMIZED;
-				transition_pane_state(np, IconicState,
-				    ws->layout->display);
-				XUnmapWindow(ws->layout->display, np->window);
-			}
+			continue;
 		}
+
+		if (np->flags & PF_MINIMIZED)
+			continue;
+
+		np->flags |= PF_MINIMIZED;
+		minimize(np, ws->layout);
+		draw_frame(np, ws->layout);
 	}
+
+	resize_relayout(ws->layout->focus->column);
 }
 
 /*

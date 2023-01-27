@@ -62,19 +62,26 @@ handle_action(Display *display, XContext context, int op, int target,
 		 * pane focus. That's okay.
 		 */
 		focus_pane(find_pane_by_vpos(focus->y, c), layout);
+
+#ifdef WANT_ONE_PER_COLUMN
+		force_one_maximized(layout->focus->column);
+#endif
 		break;
 	case MoveColumn:
 		if (focus != NULL) {
 			c = get_column(layout->column, 0, target);
 			remove_pane(focus, 1);
-/*			resize(focus->column);*/
 			manage_pane(focus, c, c->first);
 			focus_pane(focus, layout);
+#ifdef WANT_ONE_PER_COLUMN
+			force_one_maximized(layout->focus->column);
+#endif
 		}
 		break;
 	case MovePane:
-		if (focus != NULL && focus->column->n > 1)
+		if (focus != NULL && focus->column->n > 1) {
 			move_pane(focus, target);
+		}
 		break;
 	case FocusPane:
 		if (focus != NULL)
@@ -83,7 +90,6 @@ handle_action(Display *display, XContext context, int op, int target,
 			           get_prev_pane(focus), layout);
 #ifdef WANT_ONE_PER_COLUMN
 		force_one_maximized(focus->column);
-		resize(focus->column);
 #endif
 		break;
 	case KillPane:
@@ -98,9 +104,13 @@ handle_action(Display *display, XContext context, int op, int target,
 		break;
 	case Maximize:
 		if (focus != NULL) {
-			focus->flags ^= PF_MAXIMIZED;
+			focus->flags ^= PF_KEEP_OPEN;
 			draw_maximize_button(layout->focus, layout);
+#ifdef WANT_ONE_PER_COLUMN
+			force_one_maximized(focus->column);
+#else
 			resize_relayout(layout->focus->column);
+#endif
 		}
 		break;
 	case Minimize:

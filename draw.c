@@ -34,7 +34,7 @@ draw_maximize_button(struct pane *p, struct layout *l)
 	bool reverse;
 
 	reverse = false;
-	if (p->flags & PF_MAXIMIZED)
+	if (p->flags & PF_KEEP_OPEN)
 		reverse = true;
 
 	draw_button(p, p->maximize_button, '^', reverse, l);

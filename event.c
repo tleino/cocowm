@@ -344,7 +344,7 @@ handle_button_press(Display *display, XContext context, XEvent *event,
 	} else {
 		if (event->xbutton.window == pane->maximize_button) {
 			TRACE("button was maximize button");
-			pane->flags ^= PF_MAXIMIZED;
+			pane->flags ^= PF_KEEP_OPEN;
 			draw(event->xbutton.window, layout);
 			resize_relayout(pane->column);
 			return;

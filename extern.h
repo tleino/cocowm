@@ -62,7 +62,7 @@ struct pane
 	unsigned int   return_priority;
 
 #define PF_FOCUSED     (1 << 0)
-#define PF_MAXIMIZED   (1 << 1)
+#define PF_KEEP_OPEN   (1 << 1)
 #define PF_MINIMIZED   (1 << 2)
 #define PF_MAPPED      (1 << 3)
 #define PF_DIRTY       (1 << 4)
