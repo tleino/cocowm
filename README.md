@@ -13,9 +13,33 @@ moves a window one column to the left and resizes if space allows for
 it, rather than by manually micro-managing precise placement and size
 using a mouse.
 
-## Default key bindings
+## Controls
 
-Edit keyboard.c to modify.
+*cocowm* is fully controllable using keyboard and partially controllable
+using mouse.
+
+Edit keyboard.c to modify default key bindings.
+
+*cocowm* is used best when windows are explicitly created by the user
+using *cocowm command line* via **Win+Enter** or **Win+Space**.
+
+So, for example, don't ask your browser to create a new window,
+but ask *cocowm* to do it.
+
+*cocowm* tries to help in selecting the correct program using the
+following magic:
+
+### Running commands
+
+Open the prompt via **Win+Enter** or **Win+Space**. Exit the prompt
+using **Esc** (cancel) or **Enter** (launch).
+
+* **Run URLs:** If no spaces but has at least one '.', prefix the line
+with "firefox-esr ".
+* **Run shell commands:** If the line begins with '!', prefix the line
+with "xterm -hold -e "
+
+Edit action.c to modify these.
 
 ### Focusing windows
 

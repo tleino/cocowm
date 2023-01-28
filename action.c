@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
+#include <ctype.h>
 
 /*
  * We need to track current column.
@@ -331,8 +331,26 @@ restart_pane(struct pane *p, Display *d)
 
 	TRACE("should restart");
 	if (strlen(p->prompt.text)) {
-		snprintf(cmd, sizeof(cmd), "DISPLAY=:0 %s &",
-		    p->prompt.text);
+		if (p->prompt.text[0] == '!')
+			snprintf(cmd, sizeof(cmd),
+			    "DISPLAY=:0 xterm -hold -e %s &",
+			    &p->prompt.text[1]);
+		else {
+			int has_dot = 0;
+			char *s = &p->prompt.text[0];
+
+			while (*s != '\0' && !isspace(*s))
+				if (*s++ == '.')
+					has_dot = 1;
+
+			if (has_dot && !isspace(*s))
+				snprintf(cmd, sizeof(cmd),
+				    "DISPLAY=:0 firefox-esr %s &",
+				    p->prompt.text);
+			else
+				snprintf(cmd, sizeof(cmd), "DISPLAY=:0 %s &",
+				    p->prompt.text);
+		}
 	} else {
 		cmd[0] = 0;
 		strlcat(cmd, "DISPLAY=:0 ", sizeof(cmd));
