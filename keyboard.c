@@ -37,13 +37,14 @@ static const struct binding keybinding[] = {
 	{ XK_Up,    Mod4Mask | ControlMask,  MovePane,       Backward },
 
 /* Actions */
-	{ XK_o,     Mod4Mask,                Maximize,       0 },
-	{ XK_m,     Mod4Mask,                Minimize,       0 },
-	{ XK_h,     Mod4Mask,                Minimize,       Others },
-	{ XK_f,     Mod4Mask,                Fullscreen,     0 },
-	{ XK_r,     Mod4Mask,                RestartCommand, 0 },
-	{ XK_space, Mod4Mask,                EditCommand,    0 },
-	{ XK_q,     Mod4Mask,                KillPane,       0 },
+	{ XK_o,      Mod4Mask,                Maximize,       0 },
+	{ XK_m,      Mod4Mask,                Minimize,       0 },
+	{ XK_h,      Mod4Mask,                Minimize,       Others },
+	{ XK_f,      Mod4Mask,                Fullscreen,     0 },
+	{ XK_r,      Mod4Mask,                RestartCommand, 0 },
+	{ XK_space,  Mod4Mask,                EditCommand,    0 },
+	{ XK_Return, Mod4Mask,                NewCommand,     0 },
+	{ XK_q,      Mod4Mask,                KillPane,       0 },
 
 /* Window manager */
 	{ XK_F11,   0,                       RestartManager, 0 },

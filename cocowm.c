@@ -18,7 +18,6 @@ main(int argc, char *argv[])
 	XEvent event;
 	static struct layout layout;
 	int columns, running;
-	struct column *columns_head;
 	struct pane *focus;
 	Display *display;
 	XContext context;
@@ -76,8 +75,9 @@ main(int argc, char *argv[])
 	bind_keys(display, DefaultRootWindow(display));
 #endif
 
+	XSync(display, False);
+
 	running = 1;
-	columns_head = NULL;
 	focus = NULL;
 	while (running) {
 		XNextEvent(display, &event);
@@ -163,6 +163,7 @@ capture_existing_windows(struct layout *l)
 				TRACE_END("captured %lx, created %s",
 				    children[i], PANE_STR(p));
 			}
+
 #if 0
 			interceptmap(display, context, children[i], attrib.x);
 #endif

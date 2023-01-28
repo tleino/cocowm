@@ -91,7 +91,7 @@ focus_pane(struct pane *p, struct layout *l)
 		XGetGCValues(l->display, l->focus_gc, GCBackground, &v);
 		XSetWindowBackground(l->display, p->frame, v.background);
 
-		if (p->flags & PF_MINIMIZED) {
+		if (p->flags & PF_WITHOUT_WINDOW) {
 			TRACE("forcing focus to frame");
 			XSetInputFocus(l->display, p->frame,
 			               RevertToPointerRoot, CurrentTime);

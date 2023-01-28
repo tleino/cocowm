@@ -17,7 +17,8 @@ void send_delete_window(struct pane *, Display *);
 void send_take_focus(struct pane *p, Display *d);
 void send_message(Atom a, Window w, Display *d);
 
-static void edit_command(struct pane *p, struct layout *l);
+static int edit_command(struct pane *p, struct layout *l);
+static void new_command(struct pane *p, struct layout *l);
 
 int
 handle_action(Display *display, XContext context, int op, int target,
@@ -38,6 +39,9 @@ handle_action(Display *display, XContext context, int op, int target,
 #endif
 	case EditCommand:
 		edit_command(focus, layout);
+		break;
+	case NewCommand:
+		new_command(focus, layout);
 		break;
 	case RestartCommand:
 		if (focus != NULL) {
@@ -146,6 +150,23 @@ handle_action(Display *display, XContext context, int op, int target,
 }
 
 static void
+new_command(struct pane *focus, struct layout *l)
+{
+	struct pane *p;
+
+	p = create_empty_pane(l, l->column->x);
+	manage_pane(p, l->column, focus);
+
+	XMapWindow(l->display, p->frame);
+	XMapSubwindows(l->display, p->frame);
+
+	draw_frame(p, l);
+	focus_pane(p, l);
+	if (edit_command(p, l) == 0)
+		close_pane(p, l);
+}
+
+static int
 edit_command(struct pane *p, struct layout *l)
 {
 	p->flags |= PF_EDIT;
@@ -153,13 +174,18 @@ edit_command(struct pane *p, struct layout *l)
 	if (prompt_read(&p->prompt)) {
 		p->flags |= PF_WANT_RESTART;
 		close_pane(p, l);
+		return 1;
 	}
+	return 0;
 }
 
 void
 close_pane(struct pane *p, struct layout *l)
 {
-	if (!(p->flags & PF_HAS_DELWIN)) {
+	if (p->flags & PF_EMPTY) {
+		p->name = NULL;
+		observedestroy(l->display, l->context, p->frame, l);
+	} else if (!(p->flags & PF_HAS_DELWIN)) {
 		XKillClient(l->display, p->window);
 		observedestroy(l->display, l->context, p->window, l);
 		return;

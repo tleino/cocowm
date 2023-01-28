@@ -503,7 +503,7 @@ observemap(Display *display, XContext context, Window window,
 		}
 	}
 
-	if (window == pane->frame) {
+	if (window == pane->frame && !(pane->flags & PF_EMPTY)) {
 		TRACE("Reparent from MapNotify");
 		XReparentWindow(display, pane->window, pane->frame, 0, 20);
 	}

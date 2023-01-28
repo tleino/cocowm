@@ -68,8 +68,8 @@ str_op(int op)
 		"NoAction", "FocusPane", "MovePane", "FocusColumn",
 		"MoveColumn", "KillPane", "RestartManager",
 		"ToggleTagMode", "Maximize", "QuitManager", "Minimize",
-		"Fullscreen", "PrevFocus", "EditCommand", "RestartCommand",
-		"ToggleMode",
+		"Fullscreen", "PrevFocus", "EditCommand", "NewCommand",
+		"RestartCommand", "ToggleMode",
 		NULL
 	};
 

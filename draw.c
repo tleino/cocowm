@@ -117,12 +117,13 @@ draw_frame(struct pane *p, struct layout *l)
 
 	XClearWindow(l->display, p->frame);
 
-	snprintf(number_str, sizeof(number_str), "%ld%c%c%c%c%c: ", p->number,
+	snprintf(number_str, sizeof(number_str), "%ld%c%c%c%c%c%c: ", p->number,
 	    p->flags & PF_MINIMIZED ? 'M' : 'm',
 	    p->flags & PF_HIDDEN ? 'H' : 'h',
 	    p->flags & PF_HIDE_OTHERS_LEADER ? 'L' : 'l',
 	    p->flags & PF_KEEP_OPEN ? 'O' : 'o',
-	    p->flags & PF_EDIT ? 'E' : 'e');
+	    p->flags & PF_EDIT ? 'E' : 'e',
+	    p->flags & PF_EMPTY ? 'Y' : 'y');
 
 	XDrawString(l->display, p->frame, l->normal_gc,
 	    1 + l->fs->min_bounds.lbearing, 1 + l->fs->ascent, number_str,

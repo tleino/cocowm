@@ -68,10 +68,6 @@ void init(Display *display, struct layout *layout, int columns)
 	    layout->fs->max_bounds.descent;
 	layout->titlebar_height_px = layout->font_height_px + 2;
 
-	layout->head = init_columns(display, columns, layout);
-
-	layout->column = layout->head;
-
 	init_colors(display, layout);
 
 	XChangeGC(display, layout->focus_gc,
@@ -81,6 +77,9 @@ void init(Display *display, struct layout *layout, int columns)
 
 	layout->display = display;
 	layout->outline_gc = create_outline_gc(layout);
+
+	layout->head = init_columns(display, columns, layout);
+	layout->column = layout->head;
 }
 
 static GC create_outline_gc(struct layout *l)
@@ -111,10 +110,13 @@ init_columns(Display *display, int n, struct layout *l)
 	rwidth -= hspacing * (n+1);
 	equal = rwidth / n;
 
+	TRACE("init columns");
+
 	while (n--) {
 		if ((column = calloc(1, sizeof(struct column))) == NULL)
 			err(1, "initializing columns");
 
+		TRACE("init column");
 		column->x = x;
 		column->width = equal;
 		column->max_height = region_height(display, column->x);

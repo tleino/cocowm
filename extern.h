@@ -91,6 +91,9 @@ struct pane
 #define PF_HIDDEN (1 << 16)
 #define PF_HIDE_OTHERS_LEADER (1 << 17)
 #define PF_EDIT (1 << 18)
+#define PF_EMPTY (1 << 19)
+
+#define PF_WITHOUT_WINDOW (PF_EMPTY | PF_MINIMIZED | PF_HIDDEN)
 
 	int            flags;
 
@@ -195,6 +198,7 @@ enum action {
 	Fullscreen,
 	PrevFocus,
 	EditCommand,
+	NewCommand,
 	RestartCommand,
 	ToggleMode
 };
@@ -259,6 +263,7 @@ find_column_by_hpos(int x, struct column *head);
 struct pane* create_pane (Window, Window, int);
 #endif
 
+struct pane *create_empty_pane(struct layout *, int);
 struct pane * create_pane(Window w, struct layout *l);
 
 struct pane * get_prev_pane(struct pane *pane);

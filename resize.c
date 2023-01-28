@@ -65,7 +65,7 @@ resize_add(struct column *ws, struct pane *pane)
 
 	equal = calculate_new_equal(ws, pane);
 
-	if (pane->flags & PF_MINIMIZED)
+	if (pane->flags & PF_WITHOUT_WINDOW)
 		required = ws->layout->titlebar_height_px;
 	else {
 		if (pane->adjusted_height > 0 &&
@@ -84,7 +84,7 @@ resize_add(struct column *ws, struct pane *pane)
 	/*
 	 * Nothing to do anymore if we were minimized.
 	 */
-	if (pane->flags & PF_MINIMIZED)
+	if (pane->flags & PF_WITHOUT_WINDOW)
 		return;
 
 	/*
@@ -105,7 +105,7 @@ calculate_new_equal(struct column *ws, struct pane *ignore)
 	int n = 0;
 	int minimized_px = 0;
 
-	if (ignore->flags & PF_MINIMIZED)
+	if (ignore->flags & PF_WITHOUT_WINDOW)
 		minimized_px += ws->layout->titlebar_height_px;
 	else
 		n++;
@@ -113,7 +113,7 @@ calculate_new_equal(struct column *ws, struct pane *ignore)
 	for (p = ws->first; p != NULL; p = p->next) {
 		if (p == ignore)
 			continue;
-		if (p->flags & PF_MINIMIZED)
+		if (p->flags & PF_WITHOUT_WINDOW)
 			minimized_px += ws->layout->titlebar_height_px;
 		else
 			n++;
@@ -159,7 +159,7 @@ shrink_other_panes(struct column *ws, struct pane *ignore, int required, int equ
 		for (p = ws->first; p != NULL; p = p->next) {
 			if (p == ignore)
 				continue;
-			if (p->flags & PF_MINIMIZED)
+			if (p->flags & PF_WITHOUT_WINDOW)
 				continue;
 			if (p->height > equal)
 				n++;
@@ -174,7 +174,7 @@ shrink_other_panes(struct column *ws, struct pane *ignore, int required, int equ
 		for (p = ws->first; p != NULL; p = p->next) {
 			if (p == ignore)
 				continue;
-			if (p->flags & PF_MINIMIZED)
+			if (p->flags & PF_WITHOUT_WINDOW)
 				continue;
 
 			slice = required;
@@ -230,7 +230,7 @@ resize_remove(struct column *ws, struct pane *ignore)
 	for (p = ws->first; p != NULL; p = p->next) {
 		if (p == ignore)
 			continue;
-		if (p->flags & PF_MINIMIZED)
+		if (p->flags & PF_WITHOUT_WINDOW)
 			continue;
 		n++;
 	}
@@ -246,7 +246,7 @@ resize_remove(struct column *ws, struct pane *ignore)
 	for (p = ws->first; p != NULL; p = p->next) {
 		if (p == ignore)
 			continue;
-		if (p->flags & PF_MINIMIZED)
+		if (p->flags & PF_WITHOUT_WINDOW)
 			continue;
 
 		slice = surplus;
@@ -285,7 +285,7 @@ resize_adjust(struct column *ws, struct pane *pane, int adj)
 	title = ws->layout->titlebar_height_px;
 	minsz = title * 3;
 
-	if (pane->flags & PF_MINIMIZED) {
+	if (pane->flags & PF_WITHOUT_WINDOW) {
 		TRACE("adjust minimized pane by %d, not possible, skip", adj);
 		return;
 	}
@@ -298,7 +298,7 @@ resize_adjust(struct column *ws, struct pane *pane, int adj)
 	 * How much space is required at minimum below this pane?
 	 */
 	for (p = pane->next; p != NULL; p = p->next) {
-		if (p->flags & PF_MINIMIZED)
+		if (p->flags & PF_WITHOUT_WINDOW)
 			sum_min += title;
 		else
 			sum_min += (title * 3);
@@ -323,7 +323,7 @@ resize_adjust(struct column *ws, struct pane *pane, int adj)
 	}
 
 	for (p = pane->next; p != NULL; p = p->next) {
-		if (p->flags & PF_MINIMIZED)
+		if (p->flags & PF_WITHOUT_WINDOW)
 			continue;
 
 		if (p->height - adj < minsz) {
@@ -346,7 +346,7 @@ resize_relayout(struct column *ws)
 	struct pane *p;
 	int y = 0;
 
-	TRACE("resize relayout");
+	TRACE("resize relayout ws->n %d", ws->n);
 
 	/*
 	 * If we get error here it means we're in middle of destroying
@@ -367,7 +367,7 @@ resize_relayout(struct column *ws)
 		changes.height = p->height;
 		changes.stack_mode = Below;
 
-		if (p->flags & PF_FULLSCREEN && p->flags & PF_FOCUS && !(p->flags & PF_MINIMIZED)) {
+		if (p->flags & PF_FULLSCREEN && p->flags & PF_FOCUS && !(p->flags & PF_WITHOUT_WINDOW)) {
 			changes.x = 0;
 			changes.y = 0;
 			changes.width = region_width(ws->layout->display, ws->x);
@@ -389,7 +389,7 @@ resize_relayout(struct column *ws)
 
 		y += p->height;
 
-		if (p->flags & PF_MINIMIZED || changes.height == 0)
+		if (p->flags & PF_WITHOUT_WINDOW || changes.height == 0)
 			continue;
 
 		TRACE("configuring subwindow x=%d y=%d w=%d h=%d", changes.x,
@@ -402,7 +402,7 @@ resize_relayout(struct column *ws)
 	for (p = ws->first; p != NULL; p = p->next) {
 		if (!(p->flags & PF_FULLSCREEN))
 			continue;
-		if (p->flags & PF_MINIMIZED)
+		if (p->flags & PF_WITHOUT_WINDOW)
 			continue;
 		if (!(p->flags & PF_FOCUS))
 			continue;

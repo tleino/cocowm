@@ -40,6 +40,7 @@ Edit keyboard.c to modify.
 * **Win+f** Toggle fullscreen.
 * **Win+r** Restart command.
 * **Win+Space** Replace with new command.
+* **Win+Enter** Run new command.
 * **Win+q** Close.
 
 _Minimize_ means window is explicitly hidden and needs to be reopened manually.
