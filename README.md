@@ -39,6 +39,7 @@ Edit keyboard.c to modify.
 * **Win+h** Toggle hide others.
 * **Win+f** Toggle fullscreen.
 * **Win+r** Restart command.
+* **Win+Space** Replace with new command.
 * **Win+q** Close.
 
 _Minimize_ means window is explicitly hidden and needs to be reopened manually.

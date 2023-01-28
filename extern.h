@@ -1,6 +1,9 @@
 #include <stdbool.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/XKBlib.h>
+#include <stdio.h>
+#include <X11/extensions/XKBrules.h>
 #include <assert.h>
 #include <stdio.h>
 
@@ -51,6 +54,14 @@ struct layout
 	int            titlebar_height_px;
 };
 
+struct prompt {
+	char           text[512];
+	char          *cursor;
+	struct pane   *pane;
+	XIM            im;
+	XIC            ic;
+};
+
 struct pane
 {
 	Window         frame;
@@ -79,6 +90,7 @@ struct pane
 #define PF_REPARENTED (1 << 15)
 #define PF_HIDDEN (1 << 16)
 #define PF_HIDE_OTHERS_LEADER (1 << 17)
+#define PF_EDIT (1 << 18)
 
 	int            flags;
 
@@ -94,6 +106,8 @@ struct pane
 
 	char           *name;
 	char           *icon_name;
+
+	struct prompt  prompt;
 
 	char           **argv;
 	int            argc;
@@ -162,6 +176,10 @@ void send_take_focus(struct pane *p, Display *d);
 void minimize(struct pane *, struct layout *);
 void minimize_others(struct pane *, struct layout *);
 
+void prompt_insert(struct prompt *, char *);
+void prompt_init(struct prompt *, struct pane *, struct layout *);
+int prompt_read(struct prompt *);
+
 enum action {
 	NoAction=0,
 	FocusPane,	/* CirculateFocus */
@@ -176,6 +194,7 @@ enum action {
 	Minimize,
 	Fullscreen,
 	PrevFocus,
+	EditCommand,
 	RestartCommand,
 	ToggleMode
 };

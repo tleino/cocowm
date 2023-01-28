@@ -110,6 +110,8 @@ create_pane(Window w, struct layout *l)
 	                         CopyFromParent, CWEventMask | CWBackPixel,
 	                         &sa);
 
+	prompt_init(&p->prompt, p, l);
+
 	snprintf(s, sizeof(s), "cocowm frame for 0x%lx (%s)", w, p->name);
 	XStoreName(l->display, p->frame, s);
 

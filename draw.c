@@ -117,17 +117,24 @@ draw_frame(struct pane *p, struct layout *l)
 
 	XClearWindow(l->display, p->frame);
 
-	snprintf(number_str, sizeof(number_str), "%ld%c%c%c%c: ", p->number,
+	snprintf(number_str, sizeof(number_str), "%ld%c%c%c%c%c: ", p->number,
 	    p->flags & PF_MINIMIZED ? 'M' : 'm',
 	    p->flags & PF_HIDDEN ? 'H' : 'h',
 	    p->flags & PF_HIDE_OTHERS_LEADER ? 'L' : 'l',
-	    p->flags & PF_KEEP_OPEN ? 'O' : 'o');
+	    p->flags & PF_KEEP_OPEN ? 'O' : 'o',
+	    p->flags & PF_EDIT ? 'E' : 'e');
 
 	XDrawString(l->display, p->frame, l->normal_gc,
 	    1 + l->fs->min_bounds.lbearing, 1 + l->fs->ascent, number_str,
 	                 strlen(number_str));
 
-	if (p->name != NULL && (p->flags & PF_MINIMIZED) == 0)
+	if (p->flags & PF_EDIT) {
+		XDrawString(l->display, p->frame, l->normal_gc,
+		    1 + l->fs->min_bounds.lbearing +
+		    (strlen(number_str) * l->font_width_px),
+		    1 + l->fs->ascent,
+		    p->prompt.text, strlen(p->prompt.text));
+	} else if (p->name != NULL && (p->flags & PF_MINIMIZED) == 0)
 		XDrawString(l->display, p->frame, l->normal_gc,
 		            strlen(number_str) * l->font_width_px +
 		            l->fs->min_bounds.lbearing + 1, 1 + l->fs->ascent,

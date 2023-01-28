@@ -42,6 +42,7 @@ static const struct binding keybinding[] = {
 	{ XK_h,     Mod4Mask,                Minimize,       Others },
 	{ XK_f,     Mod4Mask,                Fullscreen,     0 },
 	{ XK_r,     Mod4Mask,                RestartCommand, 0 },
+	{ XK_space, Mod4Mask,                EditCommand,    0 },
 	{ XK_q,     Mod4Mask,                KillPane,       0 },
 
 /* Window manager */

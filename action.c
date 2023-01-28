@@ -17,6 +17,8 @@ void send_delete_window(struct pane *, Display *);
 void send_take_focus(struct pane *p, Display *d);
 void send_message(Atom a, Window w, Display *d);
 
+static void edit_command(struct pane *p, struct layout *l);
+
 int
 handle_action(Display *display, XContext context, int op, int target,
               struct layout *layout)
@@ -34,6 +36,9 @@ handle_action(Display *display, XContext context, int op, int target,
 		toggle_keybind_mode(display);
 		break;
 #endif
+	case EditCommand:
+		edit_command(focus, layout);
+		break;
 	case RestartCommand:
 		if (focus != NULL) {
 			if (XGetCommand(layout->display, focus->window,
@@ -138,6 +143,17 @@ handle_action(Display *display, XContext context, int op, int target,
 	}
 
 	return NoAction;
+}
+
+static void
+edit_command(struct pane *p, struct layout *l)
+{
+	p->flags |= PF_EDIT;
+	draw_frame(p, l);
+	if (prompt_read(&p->prompt)) {
+		p->flags |= PF_WANT_RESTART;
+		close_pane(p, l);
+	}
 }
 
 void
@@ -285,16 +301,21 @@ void
 restart_pane(struct pane *p, Display *d)
 {
 	int i;
-	static char cmd[256];
+	static char cmd[1024];
 
 	TRACE("should restart");
-	cmd[0] = 0;
-	strlcat(cmd, "DISPLAY=:0 ", sizeof(cmd));
-	for (i = 0; i < p->argc; i++) {
-		strlcat(cmd, p->argv[i], sizeof(cmd));
-		strlcat(cmd, " ", sizeof(cmd));
+	if (strlen(p->prompt.text)) {
+		snprintf(cmd, sizeof(cmd), "DISPLAY=:0 %s &",
+		    p->prompt.text);
+	} else {
+		cmd[0] = 0;
+		strlcat(cmd, "DISPLAY=:0 ", sizeof(cmd));
+		for (i = 0; i < p->argc; i++) {
+			strlcat(cmd, p->argv[i], sizeof(cmd));
+			strlcat(cmd, " ", sizeof(cmd));
+		}
+		strlcat(cmd, "&", sizeof(cmd));
 	}
-	strlcat(cmd, "&", sizeof(cmd));
 	TRACE("starting '%s'", cmd);
 	system(cmd);
 }
