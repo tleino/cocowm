@@ -10,16 +10,14 @@ static void draw_border(Window, int, int, bool, struct layout *);
 static void
 draw_button(struct pane *p, Window w, char ch, bool reverse, struct layout *l)
 {
-	XDrawString(l->display, w, l->normal_gc,
-	    1 + l->fs->min_bounds.lbearing +
-	        ((l->font_height_px - l->font_width_px) / 2),
-	    1 + l->fs->ascent, &ch, 1);
+	if (XftDrawDrawable(p->ftdraw) != w)
+		XftDrawChange(p->ftdraw, w);
+
+	font_draw(p->ftdraw, l->display, w, l->text_fg, l->text_inactive_bg,
+	    1 + ((l->font_height_px - l->font_width_px) / 2),
+	    1 + ((l->font_height_px - l->font_width_px) / 2), 1, &ch, 1);
 
 	draw_border(w, l->titlebar_height_px, l->titlebar_height_px, reverse, l);
-
-#if 0
-	XDrawRectangle(l->display, w, l->normal_gc, 0, 0, 20, 20);
-#endif
 }
 
 void
@@ -114,6 +112,13 @@ void
 draw_frame(struct pane *p, struct layout *l)
 {
 	char number_str[20];
+	int x, y;
+	XftColor bg;
+
+	TRACE("try draw frame of %s", PANE_STR(p));
+
+	if (XftDrawDrawable(p->ftdraw) != p->frame)
+		XftDrawChange(p->ftdraw, p->frame);
 
 	XClearWindow(l->display, p->frame);
 
@@ -125,26 +130,32 @@ draw_frame(struct pane *p, struct layout *l)
 	    p->flags & PF_EDIT ? 'E' : 'e',
 	    p->flags & PF_EMPTY ? 'Y' : 'y');
 
-	XDrawString(l->display, p->frame, l->normal_gc,
-	    1 + l->fs->min_bounds.lbearing, 1 + l->fs->ascent, number_str,
-	                 strlen(number_str));
+	y = 1;
+	x = 1;
+
+	if (p->flags & PF_FOCUSED)
+		bg = l->text_active_bg;
+	else
+		bg = l->text_inactive_bg;
+
+	x += font_draw(p->ftdraw, l->display, p->frame, l->text_fg, bg,
+	    x, x, y, number_str, strlen(number_str));
 
 	if (p->flags & PF_EDIT) {
-		XDrawString(l->display, p->frame, l->normal_gc,
-		    1 + l->fs->min_bounds.lbearing +
-		    (strlen(number_str) * l->font_width_px),
-		    1 + l->fs->ascent,
-		    p->prompt.text, strlen(p->prompt.text));
-	} else if (p->name != NULL && (p->flags & PF_MINIMIZED) == 0)
-		XDrawString(l->display, p->frame, l->normal_gc,
-		            strlen(number_str) * l->font_width_px +
-		            l->fs->min_bounds.lbearing + 1, 1 + l->fs->ascent,
-			    p->name,
-		            strlen(p->name));
-	else if (p->icon_name != NULL && (p->flags & PF_MINIMIZED))
-		XDrawString(l->display, p->frame, l->normal_gc,
-		            strlen(number_str) * 8 + 16, 15, p->icon_name,
-		            strlen(p->icon_name));
+		x += font_draw(p->ftdraw, l->display, p->frame, l->text_fg, bg,
+		    x, x, y, p->prompt.text, strlen(p->prompt.text));
+	} else if (p->name != NULL && (p->flags & PF_MINIMIZED) == 0) {
+		x += font_draw(p->ftdraw, l->display, p->frame, l->text_fg, bg,
+		    x, x, y, p->name, strlen(p->name));
+	} else if (p->icon_name != NULL && (p->flags & PF_MINIMIZED)) {
+		x += font_draw(p->ftdraw, l->display, p->frame, l->text_fg, bg,
+		    x, x, y, p->icon_name, strlen(p->icon_name));
+	}
+
+	if (p->flags & PF_EDIT) {
+		x += font_draw(p->ftdraw, l->display, p->frame, l->text_fg,
+		    l->text_cursor, x, x, y, " ", 1);
+	}
 
 	if (p->flags & PF_FULLSCREEN)
 		draw_border(p->frame, region_width(l->display, l->column->x), l->titlebar_height_px, false, l);

@@ -4,6 +4,7 @@
 #include <X11/XKBlib.h>
 #include <stdio.h>
 #include <X11/extensions/XKBrules.h>
+#include <X11/Xft/Xft.h>
 #include <assert.h>
 #include <stdio.h>
 
@@ -48,10 +49,15 @@ struct layout
 	Display       *display;
 	XContext       context;
 
-	XFontStruct    *fs;
 	int            font_width_px;
 	int            font_height_px;
 	int            titlebar_height_px;
+
+	XftColor text_fg;
+	XftColor text_active_bg;
+	XftColor text_inactive_bg;
+	XftColor text_cursor;
+	XftFont *ftfont;
 };
 
 struct prompt {
@@ -122,6 +128,8 @@ struct pane
 
 	/* Diagnostics */
 	unsigned long  number;
+
+	XftDraw *ftdraw;
 };
 
 struct column
@@ -158,6 +166,10 @@ struct frame
 	struct button *maximize_button;
 	struct pane   *pane;
 };
+
+void set_ftcolor(Display *dpy, XftColor *dst, int color);
+XftFont *font_load(Display *dpy, char *fontname);
+int font_draw(XftDraw *ftdraw, Display *dpy, Window window, XftColor fg, XftColor bg, int x, int sx, int y, const char *text, size_t len);
 
 void restart_pane(struct pane *p, Display *d);
 

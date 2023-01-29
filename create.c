@@ -50,6 +50,12 @@ create_empty_pane(struct layout *l, int x)
 	    dpy, parent, x, y, w, h, bw, depth, class, visual, mask, &sa);
 	p->height = h + 10;
 
+	p->ftdraw = XftDrawCreate(dpy, p->frame,
+	    DefaultVisual(dpy, DefaultScreen(dpy)),
+	    DefaultColormap(dpy, DefaultScreen(dpy)));
+	if (p->ftdraw == NULL)
+		errx(1, "XftDrawCreate failed");
+
 	prompt_init(&p->prompt, p, l);
 
 	/*

@@ -25,7 +25,7 @@ prefix=/usr/local
 if [ "$#" -eq 1 ] ; then prefix=$1 ; fi
 echo "prefix=${prefix}"
 
-PKGS="x11 xinerama"
+PKGS="x11 xinerama xft"
 for a in ${PKGS} ; do
 	check_pkg $a
 done

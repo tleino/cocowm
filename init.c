@@ -55,25 +55,26 @@ void init(Display *display, struct layout *layout, int columns)
 		}
 	}
 
-	layout->fs = XLoadQueryFont(display,
-	                     get_option(display, "font"));
-	xgc.font = layout->fs->fid;
 	xgc.line_width = 1;
 
-	layout->font_width_px =
-	    layout->fs->max_bounds.rbearing -
-	    layout->fs->min_bounds.lbearing;
-	layout->font_height_px =
-	    layout->fs->max_bounds.ascent +
-	    layout->fs->max_bounds.descent;
+	layout->ftfont = font_load(display, get_option(display, "font"));
+
+	set_ftcolor(display, &layout->text_fg, 0);
+	set_ftcolor(display, &layout->text_active_bg, 1);
+	set_ftcolor(display, &layout->text_inactive_bg, 2);
+	set_ftcolor(display, &layout->text_cursor, 3);
+
+
+	layout->font_height_px = layout->ftfont->height;
+	layout->font_width_px = layout->ftfont->max_advance_width;
 	layout->titlebar_height_px = layout->font_height_px + 2;
 
 	init_colors(display, layout);
 
 	XChangeGC(display, layout->focus_gc,
-	          GCFont | GCLineWidth, &xgc);
+	          GCLineWidth, &xgc);
 	XChangeGC(display, layout->normal_gc,
-	          GCFont | GCLineWidth, &xgc);
+	          GCLineWidth, &xgc);
 
 	layout->display = display;
 	layout->outline_gc = create_outline_gc(layout);
