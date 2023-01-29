@@ -571,7 +571,7 @@ observe_unmap(Display *display, XContext context, Window window,
 void
 observedestroy(Display *display, XContext context, Window window, struct layout *l)
 {
-	struct pane *pane;
+	struct pane *pane, *prev;
 	struct column *c;
 	int flags;
 #if 0
@@ -584,6 +584,8 @@ observedestroy(Display *display, XContext context, Window window, struct layout 
 		TRACE_ERR("destroy: NULL mw in observedestroy");
 		return;
 	}
+
+	prev = pane->prev;
 
 	/*
 	 * TODO: remove_pane calls resize column, which does operations with
@@ -656,6 +658,8 @@ observedestroy(Display *display, XContext context, Window window, struct layout 
 	/* Need to move focus to somewhere else */
 	if (!(flags & PF_WANT_RESTART))
 		focus_pane(find_previous_focus(l->head, NULL), l);
+	else if (prev != NULL)
+		focus_pane(prev, l);
 #endif
 }
 
