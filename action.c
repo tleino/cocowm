@@ -396,6 +396,7 @@ run_command(struct pane *pane, char *s)
 	}
 	pid = fork();
 	if (pid == 0) {
+		setsid();
 		setenv("DISPLAY", ":0", 1);
 		execl(sh, sh, "-c", p, NULL);
 	} else {
