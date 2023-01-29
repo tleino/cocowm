@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <unistd.h>
 
 /*
  * We need to track current column.
@@ -323,6 +324,87 @@ send_take_focus(struct pane *p, Display *d)
 	send_message(XInternAtom(d, "WM_TAKE_FOCUS", False), p->window, d);
 }
 
+static int
+maybe_url(char *s)
+{
+	int ret = 0;
+
+	while (*s != '\0' && !isspace(*s))
+		if (*s++ == '.')
+			ret = 1;
+
+	if (ret && !isspace(*s))
+		return ret;
+
+	return 0;
+}
+
+static void
+run_command(struct pane *pane, char *s)
+{
+	char *q, *p, *cmd, *sh;
+	int i;
+	pid_t pid;
+	size_t sz;
+	char *prefix;
+
+	if (s == NULL || strlen(s) == 0)
+		return;
+
+	q = strdup(s);
+	if (q == NULL) {
+		warn("strdup");
+		return;
+	}
+
+	/* Strip trailing spaces */
+	for (i = strlen(q)-1; i >= 0 && isspace(q[i]); i--)
+		q[i] = '\0';
+
+	if (q[0] == '!') {
+		prefix = "exec xterm -hold -e ";
+		cmd = q+1;
+	} else if (maybe_url(q)) {
+		prefix = "exec firefox-esr ";
+		cmd = q;
+	} else {
+		prefix = "exec ";
+		cmd = q;
+	}
+
+	sz = strlen(q) + strlen(prefix) + 1;
+	p = malloc(sz);
+	if (p == NULL) {
+		warn("malloc");
+		return;
+	}
+
+	if (snprintf(p, sz, "%s%s", prefix, cmd) >= sz)
+		assert(0);
+
+#if 0
+	if (add_command_to_history(q, 1))
+		save_command_history();
+#endif
+
+	free(q);
+
+	sh = getenv("SHELL");
+	if (sh == NULL) {
+		warn("getenv SHELL");
+		sh = "/bin/sh";
+	}
+	pid = fork();
+	if (pid == 0) {
+		setenv("DISPLAY", ":0", 1);
+		execl(sh, sh, "-c", p, NULL);
+	} else {
+		if (pid == -1)
+			warn("fork");
+		free(p);
+	}
+}
+
 void
 restart_pane(struct pane *p, Display *d)
 {
@@ -331,26 +413,7 @@ restart_pane(struct pane *p, Display *d)
 
 	TRACE("should restart");
 	if (strlen(p->prompt.text)) {
-		if (p->prompt.text[0] == '!')
-			snprintf(cmd, sizeof(cmd),
-			    "DISPLAY=:0 xterm -hold -e %s &",
-			    &p->prompt.text[1]);
-		else {
-			int has_dot = 0;
-			char *s = &p->prompt.text[0];
-
-			while (*s != '\0' && !isspace(*s))
-				if (*s++ == '.')
-					has_dot = 1;
-
-			if (has_dot && !isspace(*s))
-				snprintf(cmd, sizeof(cmd),
-				    "DISPLAY=:0 firefox-esr %s &",
-				    p->prompt.text);
-			else
-				snprintf(cmd, sizeof(cmd), "DISPLAY=:0 %s &",
-				    p->prompt.text);
-		}
+		run_command(p, p->prompt.text);
 	} else {
 		cmd[0] = 0;
 		strlcat(cmd, "DISPLAY=:0 ", sizeof(cmd));
@@ -359,7 +422,7 @@ restart_pane(struct pane *p, Display *d)
 			strlcat(cmd, " ", sizeof(cmd));
 		}
 		strlcat(cmd, "&", sizeof(cmd));
+		TRACE("starting '%s'", cmd);
+		system(cmd);
 	}
-	TRACE("starting '%s'", cmd);
-	system(cmd);
 }

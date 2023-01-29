@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <X11/Xresource.h>
 #include <errno.h>
+#include <sys/wait.h>
 
 static void capture_existing_windows (struct layout *l);
 static void select_root_events       (Display *);
@@ -80,6 +81,16 @@ main(int argc, char *argv[])
 	running = 1;
 	focus = NULL;
 	while (running) {
+		int status;
+
+#ifndef WAIT_MYPGRP
+#define WAIT_MYPGRP 0
+#endif
+		/*
+		 * Reap zombie processes.
+		 */
+		waitpid(WAIT_MYPGRP, &status, WNOHANG);
+
 		XNextEvent(display, &event);
 		switch (handle_event(display, &event, context,
 		                     &layout)) {
