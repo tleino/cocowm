@@ -93,6 +93,25 @@ has X11 Window System.
 * Edit Makefile.in and e.g. remove or add compile-time options using -D in
 the CFLAGS. E.g. see 'WANT_ONE_PER_COLUMN' option.
 * Edit files such as keyboard.c
+* Edit *hspacing* and *vspacing* in init.c
+
+## Customize using .Xresources / .Xdefaults
+
+Have the .Xresources or.Xdefaults file, based on what your system
+reads when logging in to X11 session, or read it manually.
+
+The file could look like this:
+
+	*font: -xos4-terminus-bold-r-normal--16-160-72-72-c-80-iso10646-1
+	*foreground: black
+	*background: #f5efe0
+	*internalBorder: 4
+
+Load it:
+
+	$ xrdb -load ~/.Xdefaults
+
+And restart cocowm.
 
 ## Running
 

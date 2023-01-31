@@ -53,6 +53,10 @@ struct layout
 	int            font_height_px;
 	int            titlebar_height_px;
 
+	int            hspacing;
+	int            vspacing;
+	int            borderwidth;
+
 	XftColor text_fg;
 	XftColor text_active_bg;
 	XftColor text_inactive_bg;

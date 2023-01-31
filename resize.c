@@ -104,18 +104,21 @@ calculate_new_equal(struct column *ws, struct pane *ignore)
 	struct pane *p;
 	int n = 0;
 	int minimized_px = 0;
+	int total_vspace;
 
-	if (ignore->flags & PF_WITHOUT_WINDOW)
+	if (ignore->flags & PF_WITHOUT_WINDOW) {
 		minimized_px += ws->layout->titlebar_height_px;
-	else
+		minimized_px += ws->layout->vspacing;
+	} else
 		n++;
 
 	for (p = ws->first; p != NULL; p = p->next) {
 		if (p == ignore)
 			continue;
-		if (p->flags & PF_WITHOUT_WINDOW)
+		if (p->flags & PF_WITHOUT_WINDOW) {
 			minimized_px += ws->layout->titlebar_height_px;
-		else
+			minimized_px += ws->layout->vspacing;
+		} else
 			n++;
 	}
 
@@ -123,7 +126,7 @@ calculate_new_equal(struct column *ws, struct pane *ignore)
 	if (n == 0)
 		return (ws->max_height - minimized_px);
 	else
-		return (ws->max_height - minimized_px) / n;
+		return (ws->max_height - minimized_px - (n * ws->layout->vspacing)) / n;
 }
 
 static int
@@ -387,7 +390,7 @@ resize_relayout(struct column *ws)
 		changes.height = changes.height - ws->layout->titlebar_height_px;
 		changes.stack_mode = Above;
 
-		y += p->height;
+		y += p->height + ws->layout->vspacing;
 
 		if (p->flags & PF_WITHOUT_WINDOW || changes.height == 0)
 			continue;

@@ -64,10 +64,13 @@ void init(Display *display, struct layout *layout, int columns)
 	set_ftcolor(display, &layout->text_inactive_bg, 2);
 	set_ftcolor(display, &layout->text_cursor, 3);
 
-
 	layout->font_height_px = layout->ftfont->height;
 	layout->font_width_px = layout->ftfont->max_advance_width;
 	layout->titlebar_height_px = layout->font_height_px + 2;
+
+	layout->borderwidth = 1;
+	layout->hspacing = layout->borderwidth;
+	layout->vspacing = layout->borderwidth;
 
 	init_colors(display, layout);
 
@@ -101,15 +104,22 @@ init_columns(Display *display, int n, struct layout *l)
 	struct column *head, *prev, *column;
 	int hspacing, rwidth, equal;
 	int x;
+	int surplus;
 
-	hspacing = l->font_width_px;
-
+	hspacing = l->hspacing;
 	head = prev = NULL;
 	x = hspacing;
 
 	rwidth = region_width(display, x);
 	rwidth -= hspacing * (n+1);
 	equal = rwidth / n;
+
+	/*
+	 * If it did not divide evenly, center based on the remainder.
+	 */
+	surplus = region_width(display, x) - (equal * n);
+	if (surplus / 2 - 1 > x)
+		x = surplus / 2 - 1;
 
 	TRACE("init columns");
 

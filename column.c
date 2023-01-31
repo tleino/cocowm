@@ -6,13 +6,10 @@ struct column *
 find_column_by_hpos(int x, struct column *head)
 {
 	struct column *c;
-	int hspacing;
-
-	hspacing = head->layout->font_width_px;
 
 	for (c = head; c != NULL; c = c->next)
 		if (x >= c->x && (x - c->x) <
-		    (c->width + hspacing))
+		    (c->width + head->layout->hspacing))
 			return c;
 
 	return head;

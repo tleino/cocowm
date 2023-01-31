@@ -131,7 +131,7 @@ draw_frame(struct pane *p, struct layout *l)
 	    p->flags & PF_EMPTY ? 'Y' : 'y');
 
 	y = 1;
-	x = 1;
+	x = l->font_width_px / 2;
 
 	if (p->flags & PF_FOCUSED)
 		bg = l->text_active_bg;

@@ -13,9 +13,7 @@ struct column *
 find_column(struct column *head, int x)
 {
 	struct column *column;
-	int hspacing;
-
-	hspacing = head->layout->font_width_px;
+	int hspacing = head->layout->hspacing;
 
 	for (column = head; column != NULL; column = column->next)
 		if (x >= column->x && x - column->x < column->width + hspacing)
