@@ -1,5 +1,5 @@
 SHELL = /bin/sh
-CFLAGS = -g -Wall -pedantic -std=c99 @PKGS_CFLAGS@
+CFLAGS = -g -Wall -pedantic -std=c99 @PKGS_CFLAGS@ @SYSTEM_CFLAGS@
 LDFLAGS = @PKGS_LDFLAGS@
 
 prefix = @prefix@
