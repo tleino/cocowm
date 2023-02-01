@@ -463,7 +463,7 @@ observemap(Display *display, XContext context, Window window,
 	}
 
 	TRACE("observemap for %s", PANE_STR(pane));
-	pane->flags |= (PF_MAPPED | PF_DIRTY | PF_FOCUSED | PF_FOCUS);
+	pane->flags |= (PF_MAPPED | PF_DIRTY);
 
 
 	if (XGetWindowAttributes(display, window, &attrib) == 0)
@@ -494,12 +494,11 @@ observemap(Display *display, XContext context, Window window,
 		if (pane->column != NULL) {
 			resize_relayout(pane->column);
 		}
-		if (pane->flags & PF_FOCUSED) {
-			if (pane->flags & PF_REPARENTED) {
-				TRACE("focus pane from observemap 2 (reparent ok)");
-				focus_pane(pane, layout);
-				pane->flags &= ~PF_REPARENTED;
-			}
+		TRACE("...resize layout complete");
+		if (pane->flags & PF_REPARENTED) {
+			TRACE("focus pane from observemap 2 (reparent ok)");
+			focus_pane(pane, layout);
+			pane->flags &= ~PF_REPARENTED;
 		}
 	}
 
@@ -671,7 +670,9 @@ interceptconfigure(struct pane *p, struct layout *l, XContext context, Window w,
 	unsigned long xwcm;
 
 	if (p != NULL) {
-		TRACE("intercepted configure for managed pane, ignore");
+		TRACE("intercepted configure for managed pane, resize column");
+		if (p->column)
+			resize_relayout(p->column);
 		return;
 	}
 
@@ -680,8 +681,8 @@ interceptconfigure(struct pane *p, struct layout *l, XContext context, Window w,
 	xwcm = e.value_mask &
 	    (CWX | CWY | CWWidth | CWHeight | CWBorderWidth);
 
-	xwc.x = e.x;
-	xwc.y = e.y;
+	xwc.x = l->column->x;
+	xwc.y = 0;
 
 #if 0
 	xwc.width = e.width;
