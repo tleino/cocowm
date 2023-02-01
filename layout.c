@@ -45,6 +45,28 @@ region(Display *display, int x)
 }
 
 int
+region_x_org(Display *display, int x)
+{
+	int i, n;
+	XineramaScreenInfo *xsi;
+
+	/* TODO: Use RandR because we can get events and more info */
+	if (XineramaIsActive(display) != True)
+		return 0;
+
+	xsi = XineramaQueryScreens(display, &n);
+	for (i = 0; i < n; i++) {
+		if (x >= xsi[i].x_org && x < xsi[i].x_org + xsi[i].width)
+			return xsi[i].x_org;
+	}
+	/* TODO: xsi leaks memory, free it? */
+
+	warnx("region out of bounds x=%d", x);
+
+	return 0;
+}
+
+int
 region_width(Display *display, int x)
 {
 	int i, n;

@@ -259,6 +259,7 @@ void           draw_frame         (Display *, Window, const char *, int);
 
 int            region_height      (Display *, int);
 int            region_width       (Display *, int);
+int            region_x_org       (Display *, int);
 int            region             (Display *, int);
 void           init               (Display *, struct layout *, int);
 struct pane   *layout_manage      (Display *, XContext, Window, int);

@@ -371,7 +371,7 @@ resize_relayout(struct column *ws)
 		changes.stack_mode = Below;
 
 		if (p->flags & PF_FULLSCREEN && p->flags & PF_FOCUS && !(p->flags & PF_WITHOUT_WINDOW)) {
-			changes.x = 0;
+			changes.x = region_x_org(ws->layout->display, ws->x);
 			changes.y = 0;
 			changes.width = region_width(ws->layout->display, ws->x);
 			changes.height = ws->max_height;

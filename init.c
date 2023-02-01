@@ -8,7 +8,7 @@
 static void           init_colors  (Display *, struct layout *);
 static void           set_color    (Display *, const char *, const char *, GC *);
 static char          *get_option   (Display *, const char *);
-static struct column *init_columns (Display *, int n, struct layout *);
+static void init_columns (Display *, int n, struct layout *);
 static GC create_outline_gc(struct layout *l);
 
 static char*
@@ -82,7 +82,7 @@ void init(Display *display, struct layout *layout, int columns)
 	layout->display = display;
 	layout->outline_gc = create_outline_gc(layout);
 
-	layout->head = init_columns(display, columns, layout);
+	init_columns(display, columns, layout);
 	layout->column = layout->head;
 }
 
@@ -98,18 +98,31 @@ static GC create_outline_gc(struct layout *l)
 	                 GCFunction | GCSubwindowMode | GCForeground, &v);
 }
 
-static struct column *
-init_columns(Display *display, int n, struct layout *l)
+int
+columns_for_region(struct layout *l, int x)
 {
-	struct column *head, *prev, *column;
-	int hspacing, rwidth, equal;
-	int x;
-	int surplus;
+	int r;
+	int n = 0;
+	struct column *c;
+
+	r = region(l->display, x);
+	for (c = l->head; c != NULL; c = c->next)
+		if (region(l->display, c->x) == r)
+			n++;
+
+	return n;
+}
+
+static void
+add_column(Display *display, struct layout *l, int x)
+{
+	int i, r, n, rwidth, hspacing, surplus, equal;
+	struct column *prev, *column;
 
 	hspacing = l->hspacing;
-	head = prev = NULL;
-	x = hspacing;
 
+	r = region(l->display, x);
+	n = columns_for_region(l, x) + 1;
 	rwidth = region_width(display, x);
 	rwidth -= hspacing * (n+1);
 	equal = rwidth / n;
@@ -118,37 +131,84 @@ init_columns(Display *display, int n, struct layout *l)
 	 * If it did not divide evenly, center based on the remainder.
 	 */
 	surplus = region_width(display, x) - (equal * n);
-	if (surplus / 2 - 1 > x)
-		x = surplus / 2 - 1;
+	if (x + (surplus / 2) - 1 > x)
+		x += surplus / 2 - 1;
 
-	TRACE("init columns");
+	/*
+	 * Resize (shrink) existing columns in this region.
+	 */
+	for (column = l->head; column != NULL; column = column->next) {
+		if (region(l->display, column->x) != r)
+			continue;
 
-	while (n--) {
-		if ((column = calloc(1, sizeof(struct column))) == NULL)
-			err(1, "initializing columns");
-
-		TRACE("init column");
 		column->x = x;
 		column->width = equal;
 		column->max_height = region_height(display, column->x);
 		column->layout = l;
 
-		/*
-		 * Add to tail.
-		 */
-		if (head == NULL)
-			head = column;
-		else {
-			column->prev = l->tail;
-			assert(column->prev != NULL);
-			column->prev->next = column;
-		}
-		l->tail = column;
-
 		x += column->width + hspacing;
 	}
 
-	return head;
+	/*
+	 * Add new column.
+	 */
+	if ((column = calloc(1, sizeof(struct column))) == NULL)
+		err(1, "initializing columns");
+
+	TRACE("init column");
+	column->x = x;
+	column->width = equal;
+	column->max_height = region_height(display, column->x);
+	column->layout = l;
+
+	/*
+	 * Add to tail.
+	 */
+	if (l->head == NULL)
+		l->head = column;
+	else {
+		column->prev = l->tail;
+		assert(column->prev != NULL);
+		column->prev->next = column;
+	}
+	l->tail = column;
+}
+
+void
+init_columns(Display *display, int n, struct layout *l)
+{
+	int i, r, x;
+	int regions;
+	XineramaScreenInfo *xsi = NULL;
+	int columns_per_region;
+
+	if (XineramaIsActive(display) != True)
+		regions = 1;
+	else {
+		xsi = XineramaQueryScreens(display, &regions);
+		if (!xsi)
+			regions = 1;
+		assert(regions >= 1);
+	}
+
+	columns_per_region = n / regions;
+	if (columns_per_region < 1)
+		columns_per_region = 1;
+
+	for (r = 0; r < regions; r++) {
+		for (i = 0; i < columns_per_region; i++) {	
+			if (xsi)
+				x = xsi[r].x_org;
+			else
+				x = 0;
+			add_column(display, l, x);
+			n--;
+		}
+	}
+	while (n-- > 0)
+		add_column(display, l, x);
+
+	return;
 }
 
 static void init_colors(Display *display, struct layout *layout)
