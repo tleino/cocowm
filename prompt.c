@@ -53,7 +53,6 @@ isu8cont(unsigned char c)
 void
 prompt_insert(struct prompt *p, char *s)
 {
-	TRACE("Insert char %s", s);
 	while (*s != '\0') {
 		if (is_full(p))
 			break;
@@ -61,7 +60,6 @@ prompt_insert(struct prompt *p, char *s)
 	}
 
 	*p->cursor = '\0';
-	TRACE("text is now %s", p->text);
 }
 
 static int
@@ -100,7 +98,7 @@ prompt_init(struct prompt *p, struct pane *pane, struct layout *layout)
  * Read text from the prompt.
  */
 int
-prompt_read(struct prompt *p)
+prompt_read(struct prompt *p, PromptCallback callback, PromptCallback step, void *udata)
 {
 	Display *dpy;
 	int ret = 1;
@@ -134,6 +132,7 @@ prompt_read(struct prompt *p)
 				} else
 					ret = 0;
 			}
+			step(p->text, udata);
 			draw_frame(p->pane, p->pane->column->layout);
 			break;
 		case KeyRelease:

@@ -12,8 +12,22 @@ mandir = $(datarootdir)/man
 INSTALL ?= install
 INSTALLFLAGS ?=
 
-SRCS=text.c prompt.c cocowm.c layout.c trace.c keyboard.c pane.c action.c \
-	resize.c column.c event.c create.c manage.c draw.c init.c
+SRCS=history.c \
+	text.c \
+	prompt.c \
+	cocowm.c \
+	layout.c \
+	trace.c \
+	keyboard.c \
+	pane.c \
+	action.c \
+	resize.c \
+	column.c \
+	event.c \
+	create.c \
+	manage.c \
+	draw.c \
+	init.c
 DISTFILES=\
 	Makefile\
 	README\

@@ -195,9 +195,16 @@ void send_take_focus(struct pane *p, Display *d);
 void minimize(struct pane *, struct layout *);
 void minimize_others(struct pane *, struct layout *);
 
+typedef void (*PromptCallback)(const char *, void *);
+
 void prompt_insert(struct prompt *, char *);
 void prompt_init(struct prompt *, struct pane *, struct layout *);
-int prompt_read(struct prompt *);
+int prompt_read(struct prompt *, PromptCallback, PromptCallback, void *);
+
+const char *history_match(const char *s);
+void history_load();
+void history_save();
+void history_add(const char *s);
 
 enum action {
 	NoAction=0,

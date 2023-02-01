@@ -167,12 +167,32 @@ new_command(struct pane *focus, struct layout *l)
 		close_pane(p, l);
 }
 
+void
+edit_finish(const char *s, void *udata)
+{
+	struct pane *p = udata;
+}
+
+void
+edit_step(const char *s, void *udata)
+{
+	struct pane *p = udata;
+	const char *q;
+	int col;
+
+	TRACE("Edit step: '%s'", s);
+
+	q = history_match(s);
+	if (q != NULL)
+		snprintf(p->prompt.text, sizeof(p->prompt.text), "%s", q);
+}
+
 static int
 edit_command(struct pane *p, struct layout *l)
 {
 	p->flags |= PF_EDIT;
 	draw_frame(p, l);
-	if (prompt_read(&p->prompt)) {
+	if (prompt_read(&p->prompt, edit_finish, edit_step, p)) {
 		p->flags |= PF_WANT_RESTART;
 		close_pane(p, l);
 		return 1;
@@ -383,11 +403,7 @@ run_command(struct pane *pane, char *s)
 	if (snprintf(p, sz, "%s%s", prefix, cmd) >= sz)
 		assert(0);
 
-#if 0
-	if (add_command_to_history(q, 1))
-		save_command_history();
-#endif
-
+	history_add(q);
 	free(q);
 
 	sh = getenv("SHELL");

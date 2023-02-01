@@ -52,7 +52,7 @@ main(int argc, char *argv[])
 
 #ifdef __OpenBSD__
 #if 1
-	if (pledge("stdio rpath proc exec", NULL) == -1)
+	if (pledge("stdio rpath wpath cpath proc exec", NULL) == -1)
 		err(1, "pledge");
 #else
 	if (pledge("stdio rpath", NULL) == -1)

@@ -112,7 +112,7 @@ void
 draw_frame(struct pane *p, struct layout *l)
 {
 	char number_str[20];
-	int x, y;
+	int x, y, prompt_x;
 	XftColor bg;
 
 	TRACE("try draw frame of %s", PANE_STR(p));
@@ -140,6 +140,7 @@ draw_frame(struct pane *p, struct layout *l)
 
 	x += font_draw(p->ftdraw, l->display, p->frame, l->text_fg, bg,
 	    x, x, y, number_str, strlen(number_str));
+	prompt_x = x;
 
 	if (p->flags & PF_EDIT) {
 		x += font_draw(p->ftdraw, l->display, p->frame, l->text_fg, bg,
@@ -152,9 +153,14 @@ draw_frame(struct pane *p, struct layout *l)
 		    x, x, y, p->icon_name, strlen(p->icon_name));
 	}
 
+	/*
+	 * Draw cursor.
+	 */
 	if (p->flags & PF_EDIT) {
+		prompt_x += ((p->prompt.cursor - p->prompt.text) * l->font_width_px);
 		x += font_draw(p->ftdraw, l->display, p->frame, l->text_fg,
-		    l->text_cursor, x, x, y, " ", 1);
+		    l->text_cursor, prompt_x, prompt_x, y,
+		    *p->prompt.cursor != '\0' ? p->prompt.cursor : " ", 1);
 	}
 
 	if (p->flags & PF_FULLSCREEN)
