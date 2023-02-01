@@ -186,6 +186,7 @@ close_pane(struct pane *p, struct layout *l)
 	if (p->flags & PF_EMPTY) {
 		p->name = NULL;
 		observedestroy(l->display, l->context, p->frame, l);
+		return;
 	} else if (!(p->flags & PF_HAS_DELWIN)) {
 		XKillClient(l->display, p->window);
 		observedestroy(l->display, l->context, p->window, l);
